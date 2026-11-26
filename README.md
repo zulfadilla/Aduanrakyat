@@ -5,7 +5,10 @@ Aplikasi web ringkas untuk pejabat YB. Ia boleh dibuka di telefon atau PC, dan t
 | Halaman | Untuk | Fungsi |
 |---|---|---|
 | `index.html` | Rakyat | **Hantar aduan** dan dapat no. rujukan; **Semak status** guna no. rujukan + 4 digit terakhir telefon |
-| `admin.html` | Staf YB (kata laluan) | Papan pemuka, tukar status, log progres (awam / nota dalaman), rekod aduan walk-in, eksport CSV |
+| `index.html?yb=bm` | Rakyat kawasan tertentu | Sama seperti di atas, terus kepada YB itu |
+| `admin.html` | Staf YB / Pentadbir | Papan pemuka, tukar status, log progres (awam / nota dalaman), rekod aduan walk-in, eksport CSV |
+
+**Berbilang YB:** setiap YB ada akaun (tab `Akaun` dalam Sheet), link awam, kata laluan dan no. rujukan sendiri (`BM2026-0001`), dan hanya nampak aduan kawasannya. **Pentadbir** nampak semua.
 
 **Aliran status:** Baru Diterima → Dalam Tindakan → Menunggu Agensi → **Job Done ✓**
 
@@ -13,7 +16,7 @@ Aplikasi web ringkas untuk pejabat YB. Ia boleh dibuka di telefon atau PC, dan t
 
 ## Mula
 - **Setup penuh:** ikut [PANDUAN-SETUP.md](PANDUAN-SETUP.md) (±15 minit).
-- **Cuba dulu:** buka `index.html` terus. Tanpa `API_URL` dalam `config.js`, aplikasi berjalan dalam mod demo (kata laluan staf: `demo`).
+- **Cuba dulu:** buka `index.html` terus. Tanpa `API_URL` dalam `config.js`, aplikasi berjalan dalam mod demo (akaun demo: Bukit Merah / `demo`, Sungai Durian / `demo2`, Pentadbir / `admin`).
 
 ## Struktur
 ```

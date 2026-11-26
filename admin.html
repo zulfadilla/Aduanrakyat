@@ -8,12 +8,13 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<div class="banner" id="demoBanner" hidden>Mod demo: data dalam pelayar ini sahaja. Kata laluan staf: <b>demo</b></div>
+<div class="banner" id="demoBanner" hidden>Mod demo: data dalam pelayar ini sahaja. Akaun demo: <b>Bukit Merah / demo</b>, <b>Sungai Durian / demo2</b>, <b>Pentadbir / admin</b></div>
 <header>
   <div class="wrap topbar">
-    <div class="brand"><span data-brand="tajuk">YB Kasi Setel</span><small>Panel Staf</small></div>
+    <div class="brand"><span data-brand="tajuk">YB Kasi Setel</span><small id="whoami">Panel Staf</small></div>
     <span id="adminBtns" hidden style="display:contents">
       <button class="btn" id="btnRefresh" title="Muat semula data">↻</button>
+      <button class="btn" id="btnLink" title="Salin link aduan awam untuk kawasan anda">Link awam</button>
       <button class="btn" id="btnExport">Eksport CSV</button>
       <button class="btn" id="btnLogout">Log keluar</button>
       <button class="btn primary" id="btnNew">+ Aduan</button>
@@ -25,6 +26,7 @@
 <main class="wrap narrow" id="loginView">
   <form class="panel" id="loginForm">
     <h2 style="margin-top:0; font-size:18px">Log masuk staf</h2>
+    <div class="field"><label for="lYb">Akaun</label><select id="lYb" required><option value="">Memuatkan…</option></select></div>
     <div class="field"><label for="pw">Kata laluan</label><input id="pw" type="password" required autocomplete="current-password"></div>
     <div id="loginErr" class="notice err" hidden></div>
     <button class="btn primary block" id="btnLogin">Masuk</button>
@@ -38,6 +40,7 @@
   <section class="stats" id="stats"></section>
   <section class="filters">
     <input id="q" type="search" placeholder="Cari nama, kawasan, isu, no. aduan…">
+    <select id="fYb" hidden><option value="">Semua YB</option></select>
     <select id="fKategori"><option value="">Semua kategori</option></select>
     <select id="fKeutamaan"><option value="">Semua keutamaan</option><option>Tinggi</option><option>Sederhana</option><option>Rendah</option></select>
     <select id="fSaluran"><option value="">Semua saluran</option></select>
@@ -55,6 +58,7 @@
   <form method="dialog" id="form">
     <div class="dlg-head"><h2 id="formTitle">Aduan Baru</h2><button class="btn small" value="cancel" formnovalidate>✕</button></div>
     <div class="dlg-body">
+      <div class="field" id="ybFormField" hidden><label for="fyb">Wakil rakyat / kawasan *</label><select id="fyb"></select></div>
       <div class="grid2">
         <div class="field"><label for="nama">Nama pengadu *</label><input id="nama" required></div>
         <div class="field"><label for="telefon">No. telefon *</label><input id="telefon" type="tel" required></div>
@@ -115,35 +119,52 @@
   const { esc, st, STATUS, KATEGORI, fmtDate, fmtTime, daysSince, waLink, today } = YB;
   const $ = s => document.querySelector(s);
   const PRIO = { Tinggi: 0, Sederhana: 1, Rendah: 2 };
-  const PWKEY = 'ybkasisetel.pw';
-  let pw = '';
-  try { pw = sessionStorage.getItem(PWKEY) || ''; } catch {}
+  const SKEY = 'ybkasisetel.sesi';
+  let sesi = null; // { yb, pw }
+  try { sesi = JSON.parse(sessionStorage.getItem(SKEY)); } catch {}
+  let me = null;   // { pentadbir, yb }
+  let ybList = [];
+  const ybName = kod => { const y = ybList.find(x => x.kod === kod); return y ? `${y.kawasan} · ${y.nama}` : (kod || 'Tiada YB'); };
   let data = [];
   let statusFilter = '';
   let editingNo = null;
   let viewingNo = null;
 
   YB.applyBranding();
-  const call = (action, payload = {}) => YB.call(action, { ...payload, password: pw });
+  const call = (action, payload = {}) => YB.call(action, { ...payload, yb: sesi?.yb, password: sesi?.pw });
+  const clearSesi = () => { try { sessionStorage.removeItem(SKEY); } catch {} };
 
   // ---- log masuk ----
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault();
-    pw = $('#pw').value;
+    sesi = { yb: $('#lYb').value, pw: $('#pw').value };
     $('#btnLogin').disabled = true; $('#loginErr').hidden = true;
     try {
-      await call('login');
-      try { sessionStorage.setItem(PWKEY, pw); } catch {}
+      me = await call('login');
+      try { sessionStorage.setItem(SKEY, JSON.stringify(sesi)); } catch {}
       enterApp();
     } catch (err) { $('#loginErr').textContent = err.message; $('#loginErr').hidden = false; }
     $('#btnLogin').disabled = false;
   });
-  $('#btnLogout').onclick = () => { try { sessionStorage.removeItem(PWKEY); } catch {} location.reload(); };
+  $('#btnLogout').onclick = () => { clearSesi(); location.reload(); };
 
-  function enterApp() {
+  async function enterApp() {
+    try { if (!me) me = await call('login'); }
+    catch { clearSesi(); location.reload(); return; }
     $('#loginView').hidden = true; $('#appView').hidden = false; $('#adminBtns').hidden = false;
+    $('#whoami').textContent = me.pentadbir ? 'Pentadbir · Semua YB' : `${me.yb.nama} · ${me.yb.kawasan}`;
+    $('#btnLink').hidden = me.pentadbir;
+    $('#fYb').hidden = !me.pentadbir;
+    $('#ybFormField').hidden = !me.pentadbir;
+    $('#fyb').required = me.pentadbir;
     refresh();
   }
+  $('#btnLink').onclick = async () => {
+    const url = new URL('index.html?yb=' + me.yb.kod.toLowerCase(), location.href).href;
+    try { await navigator.clipboard.writeText(url); $('#btnLink').textContent = 'Disalin ✓'; }
+    catch { prompt('Salin link ini:', url); }
+    setTimeout(() => $('#btnLink').textContent = 'Link awam', 2000);
+  };
 
   async function refresh() {
     $('#btnRefresh').disabled = true;
@@ -158,7 +179,7 @@
       render();
       if (viewingNo) openView(viewingNo);
     } catch (err) {
-      if (/kata laluan/i.test(err.message)) { try { sessionStorage.removeItem(PWKEY); } catch {} location.reload(); return; }
+      if (/kata laluan/i.test(err.message)) { clearSesi(); location.reload(); return; }
       $('#loadErr').textContent = err.message; $('#loadErr').hidden = false;
     }
     $('#btnRefresh').disabled = false;
@@ -166,10 +187,12 @@
 
   // ---- render ----
   function render() {
-    const counts = Object.fromEntries(STATUS.map(s => [s.id, data.filter(a => a.status === s.id).length]));
-    const total = data.length;
+    const fy0 = me?.pentadbir ? $('#fYb').value : '';
+    const scope = fy0 ? data.filter(a => a.yb === fy0) : data;
+    const counts = Object.fromEntries(STATUS.map(s => [s.id, scope.filter(a => a.status === s.id).length]));
+    const total = scope.length;
     const pct = total ? Math.round(counts.selesai / total * 100) : 0;
-    const done = data.filter(a => a.status === 'selesai' && a.tarikhSelesai);
+    const done = scope.filter(a => a.status === 'selesai' && a.tarikhSelesai);
     const avg = done.length ? Math.round(done.reduce((t, a) => t + Math.max(0, new Date(a.tarikhSelesai) - new Date(a.tarikh)) / 86400000, 0) / done.length) : null;
     $('#stats').innerHTML =
       `<button class="stat ${statusFilter === '' ? 'active' : ''}" data-s="">
@@ -183,7 +206,8 @@
 
     const q = $('#q').value.trim().toLowerCase();
     const fk = $('#fKategori').value, fp = $('#fKeutamaan').value, fs = $('#fSaluran').value, sort = $('#fSort').value;
-    const rows = data.filter(a =>
+    const fy = me?.pentadbir ? $('#fYb').value : '';
+    const rows = data.filter(a => (!fy || a.yb === fy) &&
       (!statusFilter || a.status === statusFilter) && (!fk || a.kategori === fk) && (!fp || a.keutamaan === fp) && (!fs || a.saluran === fs) &&
       (!q || [a.no, a.nama, a.kawasan, a.tajuk, a.butiran, a.agensi, a.pegawai, a.telefon].join(' ').toLowerCase().includes(q)));
     rows.sort((a, b) =>
@@ -205,6 +229,7 @@
         <div class="meta">
           <span>👤 ${esc(a.nama)}</span><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span>
           ${a.agensi ? `<span>🏛️ ${esc(a.agensi)}</span>` : ''}<span>⏱️ ${umur}</span>
+          ${me?.pentadbir ? `<span>🎖️ ${esc(ybName(a.yb))}</span>` : ''}
         </div>
       </article>`;
     }).join('') : `<div class="empty">${total ? 'Tiada aduan sepadan dengan carian.' : 'Belum ada aduan. Kongsi link halaman awam kepada rakyat, atau tekan <b>+ Aduan</b> untuk rekod aduan walk-in.'}</div>`;
@@ -220,6 +245,7 @@
     $('#kategori').value = a?.kategori || KATEGORI[0];
     $('#keutamaan').value = a?.keutamaan || 'Sederhana';
     $('#saluran').value = a?.saluran || 'Walk-in / Pejabat';
+    $('#fyb').value = a?.yb || $('#fYb').value || '';
     $('#formErr').hidden = true;
     $('#dlgForm').showModal();
   }
@@ -227,6 +253,7 @@
     if (!$('#form').reportValidity()) return;
     const d = {};
     for (const k of FIELDS) d[k] = $('#' + k).value.trim();
+    if (me.pentadbir) d.yb = $('#fyb').value;
     const orig = editingNo && data.find(x => x.no === editingNo);
     if (orig && String(orig.tarikh).slice(0, 10) === d.tarikh) d.tarikh = orig.tarikh; // kekalkan masa asal
     $('#btnSave').disabled = true;
@@ -251,6 +278,7 @@
       ['Pengadu', esc(a.nama)], ['Telefon', tel], ['Kawasan', esc(a.kawasan)], ['Kategori', esc(a.kategori)],
       ['Keutamaan', esc(a.keutamaan)], ['Saluran', esc(a.saluran)], ['Tarikh terima', fmtDate(a.tarikh)],
       ['Agensi dirujuk', esc(a.agensi || '-')], ['Pegawai', esc(a.pegawai || '-')],
+      ...(me?.pentadbir ? [['Wakil rakyat', esc(ybName(a.yb))]] : []),
       a.status === 'selesai' ? ['Tarikh selesai', fmtDate(a.tarikhSelesai)] : ['Tempoh terbuka', daysSince(a.tarikh) + ' hari'],
       ['Butiran', a.butiran ? esc(a.butiran).replace(/\n/g, '<br>') : '-'],
     ];
@@ -285,7 +313,7 @@
   // ---- senarai & tapisan ----
   $('#list').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openView(c.dataset.no); });
   $('#stats').addEventListener('click', e => { const b = e.target.closest('.stat'); if (b) { statusFilter = b.dataset.s; render(); } });
-  for (const id of ['#q', '#fKategori', '#fKeutamaan', '#fSaluran', '#fSort']) $(id).addEventListener('input', render);
+  for (const id of ['#q', '#fYb', '#fKategori', '#fKeutamaan', '#fSaluran', '#fSort']) $(id).addEventListener('input', render);
   $('#btnNew').onclick = () => openForm(null);
   $('#btnRefresh').onclick = refresh;
   const kOpts = KATEGORI.map(k => `<option>${esc(k)}</option>`).join('');
@@ -294,7 +322,7 @@
 
   // ---- eksport ----
   $('#btnExport').onclick = () => {
-    const cols = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai'];
+    const cols = ['no', 'yb', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai'];
     const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const csv = [cols.join(','), ...data.map(a => cols.map(c => cell(c === 'status' ? st(a.status).label : a[c])).join(','))].join('\r\n');
     const link = Object.assign(document.createElement('a'), {
@@ -305,7 +333,21 @@
   // auto-refresh setiap 2 minit supaya aduan baru muncul
   setInterval(() => { if (!$('#appView').hidden && !$('#dlgForm').open && document.visibilityState === 'visible') refresh(); }, 120000);
 
-  if (pw) enterApp();
+  // senarai akaun untuk log masuk
+  (async () => {
+    try {
+      ybList = (await YB.call('senarai')).yb;
+    } catch (err) {
+      $('#loginErr').textContent = 'Tidak dapat memuatkan senarai akaun: ' + err.message; $('#loginErr').hidden = false;
+    }
+    const opts = ybList.map(y => `<option value="${esc(y.kod)}">${esc(y.kawasan)} · ${esc(y.nama)}</option>`).join('');
+    $('#lYb').innerHTML = '<option value="">— Pilih akaun —</option>' + opts + '<option value="*">Pentadbir (semua YB)</option>';
+    const want = YB.ybParam();
+    if (ybList.some(y => y.kod === want)) $('#lYb').value = want;
+    $('#fYb').insertAdjacentHTML('beforeend', opts);
+    $('#fyb').innerHTML = '<option value="">— Pilih —</option>' + opts;
+    if (sesi?.yb && sesi?.pw) enterApp();
+  })();
 })();
 </script>
 </body>

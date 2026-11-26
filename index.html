@@ -11,7 +11,7 @@
 <div class="banner" id="demoBanner" hidden>Mod demo: aduan hanya disimpan dalam pelayar ini. Pejabat perlu siapkan sambungan Google Sheet (lihat PANDUAN-SETUP.md).</div>
 <header>
   <div class="wrap narrow topbar">
-    <div class="brand"><span data-brand="tajuk">YB Kasi Setel</span><small data-brand="subtajuk">Saluran Aduan Rakyat</small></div>
+    <div class="brand"><span id="brandTajuk" data-brand="tajuk">YB Kasi Setel</span><small id="brandSub" data-brand="subtajuk">Saluran Aduan Rakyat</small></div>
   </div>
 </header>
 
@@ -33,7 +33,10 @@
       </p>
     </div>
 
+    <div id="ybErr" class="notice err" hidden></div>
     <form id="form" class="panel">
+      <div class="field" id="ybField"><label for="yb">Wakil rakyat / kawasan *</label>
+        <select id="yb" required><option value="">Memuatkan…</option></select></div>
       <div class="grid2">
         <div class="field"><label for="nama">Nama penuh *</label><input id="nama" required maxlength="120" autocomplete="name"></div>
         <div class="field"><label for="telefon">No. telefon *</label><input id="telefon" type="tel" required maxlength="20" autocomplete="tel" placeholder="cth. 012-3456789"></div>
@@ -62,7 +65,7 @@
     <div id="semakHasil" class="panel" hidden style="margin-top:14px"></div>
   </section>
 
-  <p class="foot"><a href="admin.html">Log masuk staf</a></p>
+  <p class="foot"><a href="admin.html" id="adminLink">Log masuk staf</a></p>
 </main>
 
 <script src="config.js"></script>
@@ -87,10 +90,12 @@
     e.preventDefault();
     const data = {};
     for (const k of ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'website']) data[k] = $('#' + k).value.trim();
+    const yb = $('#yb').value;
+    if (!yb) { showErr('Sila pilih wakil rakyat / kawasan anda.'); return; }
     if (data.telefon.replace(/\D/g, '').length < 9) { showErr('Sila masukkan no. telefon yang sah.'); return; }
     $('#btnSubmit').disabled = true; $('#btnSubmit').textContent = 'Menghantar…'; $('#formErr').hidden = true;
     try {
-      const r = await call('submit', { data });
+      const r = await call('submit', { yb, data });
       $('#okNo').textContent = r.no;
       $('#okBox').hidden = false; $('#form').hidden = true;
       $('#sNo').value = r.no; $('#sTel').value = data.telefon.replace(/\D/g, '').slice(-4);
@@ -99,7 +104,7 @@
     $('#btnSubmit').disabled = false; $('#btnSubmit').textContent = 'Hantar Aduan';
   });
   function showErr(m) { $('#formErr').textContent = m; $('#formErr').hidden = false; }
-  $('#btnAgain').onclick = () => { $('#form').reset(); $('#form').hidden = false; $('#okBox').hidden = true; };
+  $('#btnAgain').onclick = () => { const y = $('#yb').value; $('#form').reset(); $('#yb').value = y; $('#form').hidden = false; $('#okBox').hidden = true; };
   $('#btnCopy').onclick = async () => {
     try { await navigator.clipboard.writeText($('#okNo').textContent); $('#btnCopy').textContent = 'Disalin ✓'; } catch {}
   };
@@ -109,7 +114,7 @@
     e.preventDefault();
     $('#btnSemak').disabled = true; $('#semakErr').hidden = true; $('#semakHasil').hidden = true;
     try {
-      const { item: a, log } = await call('status', { no: $('#sNo').value.trim(), phone4: $('#sTel').value.trim() });
+      const { item: a, log, yb } = await call('status', { no: $('#sNo').value.trim(), phone4: $('#sTel').value.trim() });
       const s = st(a.status);
       const idx = STATUS.findIndex(x => x.id === a.status);
       $('#semakHasil').innerHTML = `
@@ -117,6 +122,7 @@
           <div class="row1"><span class="id">${esc(a.no)}</span><span class="title">${esc(a.tajuk)}</span></div>
           <div class="meta"><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span><span>📅 ${fmtDate(a.tarikh)}</span></div>
         </div>
+        ${yb ? `<p style="margin:12px 0 0">Dikendalikan oleh <b>${esc(yb.nama)}</b> (${esc(yb.kawasan)})</p>` : ''}
         <h3>Status semasa</h3>
         <div class="steps">${STATUS.map((x, i) => `<span class="${i <= idx ? 'on' : ''}" style="--c:${x.color}">${x.label}</span>`).join('')}</div>
         ${a.agensi ? `<p>Dirujuk kepada: <b>${esc(a.agensi)}</b></p>` : ''}
@@ -129,6 +135,32 @@
   });
 
   if (location.hash === '#semak') showTab('semak');
+
+  // senarai YB
+  (async () => {
+    $('#btnSubmit').disabled = true;
+    try {
+      const { yb: list } = await call('senarai');
+      const want = YB.ybParam();
+      const pick = list.find(y => y.kod === want) || (list.length === 1 ? list[0] : null);
+      $('#yb').innerHTML = '<option value="">— Pilih —</option>' +
+        list.map(y => `<option value="${esc(y.kod)}">${esc(y.kawasan)} · ${esc(y.nama)}</option>`).join('');
+      if (pick) {
+        $('#yb').value = pick.kod;
+        $('#ybField').hidden = true;
+        $('#brandTajuk').textContent = pick.nama;
+        $('#brandSub').textContent = `${pick.kawasan} · Saluran Aduan Rakyat`;
+        document.title = `Aduan · ${pick.nama}`;
+        $('#adminLink').href = 'admin.html?yb=' + encodeURIComponent(pick.kod.toLowerCase());
+      } else if (!list.length) {
+        throw new Error('Tiada wakil rakyat didaftarkan lagi.');
+      }
+      $('#btnSubmit').disabled = false;
+    } catch (err) {
+      $('#ybErr').textContent = 'Tidak dapat memuatkan senarai wakil rakyat: ' + err.message;
+      $('#ybErr').hidden = false;
+    }
+  })();
 })();
 </script>
 </body>

@@ -53,34 +53,55 @@ window.YB = (() => {
   }
 
   // ---------- MOD DEMO: meniru logik apps-script/Code.gs dalam localStorage ----------
-  const MK = 'ybkasisetel.demo.v2';
+  // Akaun demo: BM / demo, SD / demo2, Pentadbir (*) / admin
+  const MK = 'ybkasisetel.demo.v3';
+  const DEMO_YB = [
+    { kod: 'BM', nama: 'YB Ahmad (Demo)', kawasan: 'DUN Bukit Merah', pw: 'demo' },
+    { kod: 'SD', nama: 'YB Siti (Demo)', kawasan: 'DUN Sungai Durian', pw: 'demo2' },
+  ];
+  const pubYb = y => y && { kod: y.kod, nama: y.nama, kawasan: y.kawasan };
   function mock(action, r) {
     let db;
     try { db = JSON.parse(localStorage.getItem(MK)) || { aduan: [], log: [] }; } catch { db = { aduan: [], log: [] }; }
     const saveDb = () => { try { localStorage.setItem(MK, JSON.stringify(db)); } catch {} };
     const now = () => new Date().toISOString();
-    const find = no => db.aduan.find(a => a.no.toLowerCase() === String(no || '').trim().toLowerCase());
+    const norm = k => String(k || '').trim().toUpperCase();
+    const ybOf = k => { const y = DEMO_YB.find(x => x.kod === norm(k)); if (!y) throw new Error('Wakil rakyat tidak dijumpai. Sila pilih kawasan yang betul.'); return y; };
     const addLog = (no, mesej, awam = true) => db.log.push({ no, masa: now(), mesej, awam });
-    const admin = () => { if (r.password !== 'demo') throw new Error('Kata laluan salah. (Mod demo: guna "demo")'); };
+    const auth = () => {
+      if (norm(r.yb) === '*' && r.password === 'admin') return { pentadbir: true };
+      const y = DEMO_YB.find(x => x.kod === norm(r.yb));
+      if (y && r.password === y.pw) return { pentadbir: false, akaun: y };
+      throw new Error('Akaun atau kata laluan salah. (Demo: BM/demo, SD/demo2, Pentadbir/admin)');
+    };
+    const canSee = (s, a) => s.pentadbir || a.yb === s.akaun.kod;
+    const findFor = (s, no) => {
+      const a = db.aduan.find(x => x.no.toLowerCase() === String(no || '').trim().toLowerCase());
+      if (!a || !canSee(s, a)) throw new Error('Aduan tidak dijumpai.');
+      return a;
+    };
     try {
       switch (action) {
+        case 'senarai': return { ok: true, yb: DEMO_YB.map(pubYb) };
         case 'submit':
         case 'create': {
           const isAdmin = action === 'create';
-          if (isAdmin) admin();
           const d = r.data || {};
-          if (!isAdmin && d.website) return { ok: true, no: 'A0000-0000' };
+          let kod;
+          if (isAdmin) { const s = auth(); kod = s.pentadbir ? ybOf(d.yb).kod : s.akaun.kod; }
+          else kod = ybOf(r.yb).kod;
+          if (!isAdmin && d.website) return { ok: true, no: kod + '0000-0000' };
           for (const k of ['nama', 'telefon', 'kawasan', 'tajuk'])
             if (!String(d[k] || '').trim()) throw new Error('Sila lengkapkan semua ruangan wajib.');
-          const y = new Date().getFullYear();
-          const n = db.aduan.filter(a => a.no.startsWith(`A${y}-`)).map(a => +a.no.split('-')[1]).reduce((m, x) => Math.max(m, x), 0) + 1;
-          const no = `A${y}-${String(n).padStart(4, '0')}`;
+          const prefix = kod + new Date().getFullYear() + '-';
+          const n = db.aduan.filter(a => a.no.startsWith(prefix)).map(a => +a.no.slice(prefix.length)).reduce((m, x) => Math.max(m, x), 0) + 1;
+          const no = prefix + String(n).padStart(4, '0');
           const a = {
             no, tarikh: isAdmin && d.tarikh ? d.tarikh : now(), nama: d.nama, telefon: d.telefon, kawasan: d.kawasan,
             kategori: d.kategori || 'Lain-lain', tajuk: d.tajuk, butiran: d.butiran || '',
             saluran: isAdmin ? (d.saluran || 'Walk-in / Pejabat') : 'Borang dalam talian',
             keutamaan: isAdmin ? (d.keutamaan || 'Sederhana') : 'Sederhana', status: 'baru',
-            agensi: isAdmin ? d.agensi || '' : '', pegawai: isAdmin ? d.pegawai || '' : '', tarikhSelesai: '', kemaskini: now(),
+            agensi: isAdmin ? d.agensi || '' : '', pegawai: isAdmin ? d.pegawai || '' : '', tarikhSelesai: '', kemaskini: now(), yb: kod,
           };
           db.aduan.push(a);
           addLog(no, `Aduan diterima melalui ${a.saluran}`);
@@ -88,25 +109,27 @@ window.YB = (() => {
           return { ok: true, no };
         }
         case 'status': {
-          const a = find(r.no);
+          const a = db.aduan.find(x => x.no.toLowerCase() === String(r.no || '').trim().toLowerCase());
           const p4 = String(r.phone4 || '').replace(/\D/g, '');
           if (!a || p4.length !== 4 || String(a.telefon).replace(/\D/g, '').slice(-4) !== p4)
             throw new Error('Aduan tidak dijumpai. Semak semula no. rujukan dan 4 digit terakhir telefon.');
-          return { ok: true, item: pub(a), log: db.log.filter(l => l.no === a.no && l.awam) };
+          return { ok: true, item: pub(a), yb: pubYb(DEMO_YB.find(y => y.kod === a.yb)), log: db.log.filter(l => l.no === a.no && l.awam) };
         }
-        case 'login': admin(); return { ok: true };
-        case 'list':
-          admin();
-          return { ok: true, items: db.aduan.map(a => ({ ...a, log: db.log.filter(l => l.no === a.no) })) };
+        case 'login': { const s = auth(); return { ok: true, pentadbir: s.pentadbir, yb: pubYb(s.akaun) || null }; }
+        case 'list': {
+          const s = auth();
+          return { ok: true, items: db.aduan.filter(a => canSee(s, a)).map(a => ({ ...a, log: db.log.filter(l => l.no === a.no) })) };
+        }
         case 'update': {
-          admin();
-          const a = find(r.no); if (!a) throw new Error('Aduan tidak dijumpai.');
+          const s = auth();
+          const a = findFor(s, r.no);
           const d = r.data || {};
           let changed = false;
           for (const k of ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'saluran', 'keutamaan', 'agensi', 'pegawai', 'tarikh'])
             if (k in d && String(d[k]) !== String(a[k])) { a[k] = d[k]; changed = true; }
+          if (s.pentadbir && d.yb && norm(d.yb) !== a.yb) { a.yb = ybOf(d.yb).kod; changed = true; }
           if (changed) addLog(a.no, 'Maklumat aduan dikemaskini', false);
-          if (d.status && d.status !== a.status && STATUS.some(s => s.id === d.status)) {
+          if (d.status && d.status !== a.status && STATUS.some(x => x.id === d.status)) {
             a.status = d.status;
             a.tarikhSelesai = d.status === 'selesai' ? now() : '';
             addLog(a.no, `Status ditukar kepada "${st(d.status).label}"`);
@@ -115,8 +138,8 @@ window.YB = (() => {
           return { ok: true };
         }
         case 'log': {
-          admin();
-          const a = find(r.no); if (!a) throw new Error('Aduan tidak dijumpai.');
+          const s = auth();
+          const a = findFor(s, r.no);
           const m = String(r.mesej || '').trim(); if (!m) throw new Error('Mesej kosong.');
           addLog(a.no, m, !!r.awam);
           if (a.status === 'baru') { a.status = 'tindakan'; addLog(a.no, `Status ditukar kepada "${st('tindakan').label}"`); }
@@ -132,5 +155,8 @@ window.YB = (() => {
   const pub = a => ({ no: a.no, tarikh: a.tarikh, kawasan: a.kawasan, kategori: a.kategori, tajuk: a.tajuk,
     status: a.status, agensi: a.agensi, tarikhSelesai: a.tarikhSelesai });
 
-  return { demo, STATUS, KATEGORI, esc, st, today, fmtDate, fmtTime, daysSince, waLink, call, applyBranding };
+  // Kod YB daripada URL (?yb=bm)
+  const ybParam = () => String(new URLSearchParams(location.search).get('yb') || '').trim().toUpperCase();
+
+  return { demo, ybParam, STATUS, KATEGORI, esc, st, today, fmtDate, fmtTime, daysSince, waLink, call, applyBranding };
 })();
