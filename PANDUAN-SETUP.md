@@ -39,7 +39,7 @@ Satu sistem untuk **ramai YB**. Setiap YB ada akaun, link awam dan kata laluan s
 2. Di bar atas, pilih fungsi **`setup`**, kemudian tekan **Run**.
 3. Google akan minta kebenaran: pilih **Review permissions**, pilih akaun anda, tekan **Advanced**, kemudian **Go to … (unsafe)**, dan akhir sekali **Allow**.
    (Amaran ini biasa untuk skrip yang anda tulis sendiri.)
-4. Semak Sheet: tab **Akaun**, **Aduan** dan **Log** telah dicipta.
+4. Semak Sheet: tab **Akaun**, **Aduan**, **Log** dan **Lampiran** telah dicipta. Folder **YB Kasi Setel - Lampiran** juga dicipta dalam Google Drive anda, untuk simpan gambar dan video aduan.
 
 ## Langkah 4b — Daftar YB dalam tab `Akaun`
 Satu baris = satu YB. Baris `CONTOH` boleh dipadam.
@@ -88,6 +88,12 @@ Di telefon, pengguna boleh pilih **Add to Home Screen** supaya ia nampak seperti
 
 ---
 
+## Naik taraf (setiap kali `Code.gs` berubah)
+1. Gantikan seluruh `Code.gs` dalam Apps Script dengan versi terbaru, kemudian **Save**.
+2. Pilih **`setup`** dan tekan **Run**. Jika Google minta kebenaran baru, contohnya untuk **Google Drive** (diperlukan untuk gambar/video), tekan **Allow**.
+3. Pergi ke **Deploy → Manage deployments**, tekan ✏️, pilih **New version**, kemudian **Deploy**.
+4. Baru gabungkan kod laman web baharu ke `main`.
+
 ## Naik taraf ke berbilang YB
 Untuk yang sudah deploy versi satu-YB:
 1. Buka **Extensions → Apps Script**, gantikan seluruh `Code.gs` dengan versi baru dari repo, kemudian **Save**.
@@ -114,6 +120,13 @@ Tetapi **pemilik Google Sheet** (Pentadbir) boleh nampak semua data dan kata lal
 - Halaman awam hanya memaparkan status, dan hanya jika seseorang tahu **no. rujukan + 4 digit terakhir telefon**.
 - Nama, telefon dan nota dalaman hanya boleh dilihat dalam panel staf (perlu kata laluan) atau dalam Sheet.
 - Jangan kongsi Sheet secara umum. Kongsi dengan staf sahaja melalui butang *Share* Google.
+
+**Gambar dan video disimpan di mana?**
+Dalam Google Drive pemilik Sheet, di folder `YB Kasi Setel - Lampiran`, dengan satu subfolder bagi setiap no. aduan. Senarainya ada dalam tab `Lampiran`.
+- Rakyat boleh hantar sehingga **5 fail** bagi setiap aduan, dalam masa 30 minit selepas aduan dihantar. Gambar dikecilkan secara automatik. Video maksimum **25 MB** (±1 minit).
+- Staf boleh tambah gambar sendiri, contohnya gambar "selepas siap", dari panel staf.
+- Fail dikongsi sebagai *sesiapa yang ada link boleh lihat* supaya staf boleh membukanya. Link hanya dipaparkan dalam panel staf dan Sheet, dan tidak dipaparkan di halaman awam.
+- Drive percuma ada had 15 GB. Padam folder aduan lama jika ruang hampir penuh.
 
 **Spam?**
 Borang ada perangkap bot ringkas. Jika ada aduan palsu, padam baris itu terus dalam Sheet.

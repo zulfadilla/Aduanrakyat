@@ -4,7 +4,7 @@ Aplikasi web ringkas untuk pejabat YB. Ia boleh dibuka di telefon atau PC, dan t
 
 | Halaman | Untuk | Fungsi |
 |---|---|---|
-| `index.html` | Rakyat | **Hantar aduan** dan dapat no. rujukan; **Semak status** guna no. rujukan + 4 digit terakhir telefon |
+| `index.html` | Rakyat | Pilih DUN (boleh cari), **hantar aduan** berserta gambar/video, dan dapat no. rujukan; **Semak status** guna no. rujukan + 4 digit terakhir telefon |
 | `index.html?yb=bm` | Rakyat kawasan tertentu | Sama seperti di atas, terus kepada YB itu |
 | `admin.html` | Staf YB / Pentadbir | Papan pemuka, tukar status, log progres (awam / nota dalaman), rekod aduan walk-in, eksport CSV |
 

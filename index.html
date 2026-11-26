@@ -26,6 +26,7 @@
     <div id="okBox" class="notice ok" hidden>
       <div>Terima kasih. Aduan anda telah diterima. No. rujukan:</div>
       <div class="refno" id="okNo"></div>
+      <p id="okUpload" style="margin:8px 0 0" hidden></p>
       <p style="margin:8px 0 0">Simpan nombor ini. Guna tab <b>Semak Status</b> dengan no. rujukan dan 4 digit terakhir telefon anda untuk lihat progres.</p>
       <p style="margin:10px 0 0; display:flex; gap:8px; flex-wrap:wrap">
         <button class="btn small" id="btnCopy">Salin no. rujukan</button>
@@ -34,21 +35,38 @@
     </div>
 
     <div id="ybErr" class="notice err" hidden></div>
-    <form id="form" class="panel">
-      <div class="field" id="ybField"><label for="yb">Wakil rakyat / kawasan *</label>
-        <select id="yb" required><option value="">Memuatkan…</option></select></div>
+    <form id="form" class="panel" novalidate>
+      <div class="field">
+        <label for="ybSearch">DUN / kawasan aduan *</label>
+        <div class="combo" id="ybCombo">
+          <input id="ybSearch" class="combo-input" type="text" autocomplete="off" placeholder="Memuatkan…" disabled
+            role="combobox" aria-expanded="false" aria-controls="ybOpts" aria-autocomplete="list">
+          <button type="button" class="combo-btn" id="ybToggle" tabindex="-1" aria-label="Papar senarai DUN">▾</button>
+          <ul class="combo-list" id="ybOpts" role="listbox" hidden></ul>
+        </div>
+        <div class="picked" id="ybPicked"></div>
+        <input type="hidden" id="yb">
+      </div>
       <div class="grid2">
         <div class="field"><label for="nama">Nama penuh *</label><input id="nama" required maxlength="120" autocomplete="name"></div>
         <div class="field"><label for="telefon">No. telefon *</label><input id="telefon" type="tel" required maxlength="20" autocomplete="tel" placeholder="cth. 012-3456789"></div>
       </div>
-      <div class="field"><label for="kawasan">Kawasan / kampung / taman *</label><input id="kawasan" required maxlength="150"></div>
+      <div class="field"><label for="kawasan">Lokasi (kampung / taman / jalan) *</label><input id="kawasan" required maxlength="150"></div>
       <div class="field"><label for="kategori">Kategori aduan</label><select id="kategori"></select></div>
       <div class="field"><label for="tajuk">Ringkasan isu *</label><input id="tajuk" required maxlength="200" placeholder="cth. Lampu jalan rosak di Jalan Melati 3"></div>
       <div class="field"><label for="butiran">Butiran (lokasi tepat, sejak bila, dll.)</label><textarea id="butiran" maxlength="3000"></textarea></div>
+      <div class="field">
+        <label>Gambar / video pendek (pilihan, maksimum 5)</label>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="files" accept="image/*,video/*" multiple>
+          <span>📷 Tekan untuk ambil atau pilih gambar / video<br><small>Video maksimum 25 MB (±1 minit)</small></span>
+        </label>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
       <div class="hp" aria-hidden="true"><label for="website">Jangan isi</label><input id="website" tabindex="-1" autocomplete="off"></div>
-      <p class="check" style="margin-bottom:12px">Maklumat anda hanya digunakan oleh pejabat YB untuk menyelesaikan aduan ini.</p>
+      <p class="check" style="margin-bottom:12px">Maklumat dan gambar anda hanya digunakan oleh pejabat YB untuk menyelesaikan aduan ini.</p>
       <div id="formErr" class="notice err" hidden></div>
-      <button class="btn primary block" id="btnSubmit">Hantar Aduan</button>
+      <button class="btn primary block" id="btnSubmit" disabled>Hantar Aduan</button>
     </form>
   </section>
 
@@ -56,7 +74,7 @@
   <section id="tab-semak" hidden>
     <form id="semakForm" class="panel">
       <div class="grid2">
-        <div class="field"><label for="sNo">No. rujukan</label><input id="sNo" required placeholder="cth. A2026-0012" autocapitalize="characters"></div>
+        <div class="field"><label for="sNo">No. rujukan</label><input id="sNo" required placeholder="cth. BM2026-0012" autocapitalize="characters"></div>
         <div class="field"><label for="sTel">4 digit terakhir telefon</label><input id="sTel" required inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="cth. 6789"></div>
       </div>
       <button class="btn primary block" id="btnSemak">Semak</button>
@@ -72,12 +90,13 @@
 <script src="assets/api.js"></script>
 <script>
 (() => {
-  const { esc, st, STATUS, KATEGORI, fmtDate, fmtTime, call } = YB;
+  const { esc, st, STATUS, KATEGORI, fmtDate, fmtTime, fmtSize, call } = YB;
   const $ = s => document.querySelector(s);
+  const cfg = window.YB_CONFIG || {};
   YB.applyBranding();
   $('#kategori').innerHTML = KATEGORI.map(k => `<option>${esc(k)}</option>`).join('');
 
-  // tab
+  // ---------- tab ----------
   function showTab(t) {
     document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
     $('#tab-hantar').hidden = t !== 'hantar';
@@ -85,31 +104,144 @@
   }
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 
-  // hantar
+  // ---------- pilihan DUN (pulldown + carian) ----------
+  let ybList = [];
+  let matches = [];
+  let active = -1;
+  const label = y => `${y.kawasan} · ${y.nama}`;
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const hl = (text, q) => {
+    if (!q) return esc(text);
+    const i = norm(text).indexOf(q);
+    return i < 0 ? esc(text) : esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length));
+  };
+  function openList(filterText) {
+    const q = norm(filterText);
+    const words = q.split(' ').filter(Boolean);
+    matches = ybList.filter(y => { const t = norm(`${y.kawasan} ${y.nama} ${y.kod}`); return words.every(w => t.includes(w)); });
+    active = matches.length ? 0 : -1;
+    $('#ybOpts').innerHTML = matches.length
+      ? matches.map((y, i) => `<li role="option" data-i="${i}" class="${i === active ? 'active' : ''}">${hl(y.kawasan, q)}<small>${hl(y.nama, q)}</small></li>`).join('')
+      : '<li class="none">Tiada DUN sepadan. Cuba ejaan lain.</li>';
+    $('#ybOpts').hidden = false;
+    $('#ybSearch').setAttribute('aria-expanded', 'true');
+  }
+  function closeList() { $('#ybOpts').hidden = true; $('#ybSearch').setAttribute('aria-expanded', 'false'); }
+  function choose(y) {
+    $('#yb').value = y ? y.kod : '';
+    $('#ybSearch').value = y ? y.kawasan : '';
+    $('#ybPicked').textContent = y ? `Aduan akan dihantar kepada ${y.nama}` : '';
+    $('#brandTajuk').textContent = y ? y.nama : (cfg.TAJUK || 'YB Kasi Setel');
+    $('#brandSub').textContent = y ? `${y.kawasan} · Saluran Aduan Rakyat` : (cfg.SUBTAJUK || 'Saluran Aduan Rakyat');
+    $('#adminLink').href = y ? 'admin.html?yb=' + encodeURIComponent(y.kod.toLowerCase()) : 'admin.html';
+    closeList();
+  }
+  function setActive(i) {
+    const items = [...$('#ybOpts').querySelectorAll('[data-i]')];
+    if (!items.length) return;
+    active = (i + items.length) % items.length;
+    items.forEach((li, k) => li.classList.toggle('active', k === active));
+    items[active].scrollIntoView({ block: 'nearest' });
+  }
+  $('#ybSearch').addEventListener('focus', () => { $('#ybSearch').select(); openList($('#yb').value ? '' : $('#ybSearch').value); });
+  $('#ybSearch').addEventListener('input', () => { $('#yb').value = ''; $('#ybPicked').textContent = ''; openList($('#ybSearch').value); });
+  $('#ybSearch').addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); $('#ybOpts').hidden ? openList('') : setActive(active + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+    else if (e.key === 'Enter') { if (!$('#ybOpts').hidden && matches[active]) { e.preventDefault(); choose(matches[active]); $('#nama').focus(); } }
+    else if (e.key === 'Escape') closeList();
+  });
+  $('#ybOpts').addEventListener('mousedown', e => {
+    const li = e.target.closest('[data-i]'); if (!li) return;
+    e.preventDefault(); choose(matches[+li.dataset.i]); $('#nama').focus();
+  });
+  $('#ybToggle').addEventListener('mousedown', e => {
+    e.preventDefault();
+    if ($('#ybOpts').hidden) { $('#ybSearch').focus(); openList(''); } else closeList();
+  });
+  $('#ybSearch').addEventListener('blur', () => {
+    closeList();
+    // Jika taip tepat satu padanan, pilih terus; jika tidak, kosongkan teks yang tidak sah.
+    if (!$('#yb').value) {
+      const q = norm($('#ybSearch').value);
+      const exact = ybList.filter(y => norm(y.kawasan) === q || norm(label(y)) === q);
+      if (exact.length === 1) choose(exact[0]);
+    } else {
+      const y = ybList.find(x => x.kod === $('#yb').value);
+      if (y) $('#ybSearch').value = y.kawasan;
+    }
+  });
+
+  // ---------- lampiran ----------
+  let files = [];
+  function renderThumbs() {
+    for (const f of files) f.url ||= URL.createObjectURL(f.file);
+    $('#thumbs').innerHTML = files.map((f, i) => `<div class="thumb">
+        ${f.file.type.startsWith('video/') ? `<video src="${f.url}" muted playsinline preload="metadata"></video>` : `<img src="${f.url}" alt="">`}
+        <span class="tag">${f.file.type.startsWith('video/') ? '▶ ' : ''}${fmtSize(f.file.size)}</span>
+        <button type="button" class="x" data-rm="${i}" aria-label="Buang">✕</button></div>`).join('');
+    $('#dropzone').hidden = files.length >= 5;
+  }
+  $('#files').addEventListener('change', e => {
+    const errs = [];
+    for (const file of e.target.files) {
+      if (files.length >= 5) { errs.push('Maksimum 5 fail sahaja.'); break; }
+      const m = YB.checkFile(file);
+      if (m) errs.push(m); else files.push({ file });
+    }
+    e.target.value = '';
+    $('#formErr').hidden = !errs.length; $('#formErr').textContent = errs.join(' ');
+    renderThumbs();
+  });
+  $('#thumbs').addEventListener('click', e => {
+    const b = e.target.closest('[data-rm]'); if (!b) return;
+    const [f] = files.splice(+b.dataset.rm, 1);
+    if (f?.url) URL.revokeObjectURL(f.url);
+    renderThumbs();
+  });
+
+  // ---------- hantar ----------
+  const btnText = t => { $('#btnSubmit').textContent = t; };
   $('#form').addEventListener('submit', async e => {
     e.preventDefault();
     const data = {};
     for (const k of ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'website']) data[k] = $('#' + k).value.trim();
     const yb = $('#yb').value;
-    if (!yb) { showErr('Sila pilih wakil rakyat / kawasan anda.'); return; }
+    if (!yb) { showErr('Sila pilih DUN / kawasan aduan daripada senarai.'); $('#ybSearch').focus(); return; }
+    if (!data.nama || !data.kawasan || !data.tajuk) { showErr('Sila lengkapkan semua ruangan bertanda *.'); return; }
     if (data.telefon.replace(/\D/g, '').length < 9) { showErr('Sila masukkan no. telefon yang sah.'); return; }
-    $('#btnSubmit').disabled = true; $('#btnSubmit').textContent = 'Menghantar…'; $('#formErr').hidden = true;
+    $('#btnSubmit').disabled = true; btnText('Menghantar…'); $('#formErr').hidden = true;
     try {
       const r = await call('submit', { yb, data });
+      // muat naik lampiran satu demi satu
+      let gagal = 0;
+      for (let i = 0; i < files.length; i++) {
+        btnText(`Memuat naik lampiran ${i + 1}/${files.length}…`);
+        try { await YB.uploadFile(files[i].file, { token: r.uploadToken }); } catch { gagal++; }
+      }
       $('#okNo').textContent = r.no;
+      $('#okUpload').hidden = !files.length;
+      $('#okUpload').textContent = gagal
+        ? `⚠️ ${gagal} daripada ${files.length} lampiran gagal dihantar. Sila hantar gambar tersebut kepada pejabat YB melalui WhatsApp bersama no. rujukan ini.`
+        : `${files.length} lampiran berjaya dihantar.`;
       $('#okBox').hidden = false; $('#form').hidden = true;
       $('#sNo').value = r.no; $('#sTel').value = data.telefon.replace(/\D/g, '').slice(-4);
+      files.forEach(f => f.url && URL.revokeObjectURL(f.url)); files = []; renderThumbs();
       window.scrollTo(0, 0);
     } catch (err) { showErr(err.message); }
-    $('#btnSubmit').disabled = false; $('#btnSubmit').textContent = 'Hantar Aduan';
+    $('#btnSubmit').disabled = false; btnText('Hantar Aduan');
   });
   function showErr(m) { $('#formErr').textContent = m; $('#formErr').hidden = false; }
-  $('#btnAgain').onclick = () => { const y = $('#yb').value; $('#form').reset(); $('#yb').value = y; $('#form').hidden = false; $('#okBox').hidden = true; };
+  $('#btnAgain').onclick = () => {
+    const y = $('#yb').value, s = $('#ybSearch').value;
+    $('#form').reset(); $('#yb').value = y; $('#ybSearch').value = s;
+    $('#form').hidden = false; $('#okBox').hidden = true;
+  };
   $('#btnCopy').onclick = async () => {
     try { await navigator.clipboard.writeText($('#okNo').textContent); $('#btnCopy').textContent = 'Disalin ✓'; } catch {}
   };
 
-  // semak
+  // ---------- semak status ----------
   $('#semakForm').addEventListener('submit', async e => {
     e.preventDefault();
     $('#btnSemak').disabled = true; $('#semakErr').hidden = true; $('#semakHasil').hidden = true;
@@ -136,28 +268,19 @@
 
   if (location.hash === '#semak') showTab('semak');
 
-  // senarai YB
+  // ---------- muat senarai DUN ----------
   (async () => {
-    $('#btnSubmit').disabled = true;
     try {
       const { yb: list } = await call('senarai');
-      const want = YB.ybParam();
-      const pick = list.find(y => y.kod === want) || (list.length === 1 ? list[0] : null);
-      $('#yb').innerHTML = '<option value="">— Pilih —</option>' +
-        list.map(y => `<option value="${esc(y.kod)}">${esc(y.kawasan)} · ${esc(y.nama)}</option>`).join('');
-      if (pick) {
-        $('#yb').value = pick.kod;
-        $('#ybField').hidden = true;
-        $('#brandTajuk').textContent = pick.nama;
-        $('#brandSub').textContent = `${pick.kawasan} · Saluran Aduan Rakyat`;
-        document.title = `Aduan · ${pick.nama}`;
-        $('#adminLink').href = 'admin.html?yb=' + encodeURIComponent(pick.kod.toLowerCase());
-      } else if (!list.length) {
-        throw new Error('Tiada wakil rakyat didaftarkan lagi.');
-      }
+      if (!list.length) throw new Error('Tiada wakil rakyat didaftarkan lagi.');
+      ybList = list.slice().sort((a, b) => a.kawasan.localeCompare(b.kawasan, 'ms'));
+      $('#ybSearch').disabled = false;
+      $('#ybSearch').placeholder = 'Pilih atau taip nama DUN / YB…';
+      const pick = ybList.find(y => y.kod === YB.ybParam()) || (ybList.length === 1 ? ybList[0] : null);
+      if (pick) choose(pick);
       $('#btnSubmit').disabled = false;
     } catch (err) {
-      $('#ybErr').textContent = 'Tidak dapat memuatkan senarai wakil rakyat: ' + err.message;
+      $('#ybErr').textContent = 'Tidak dapat memuatkan senarai DUN: ' + err.message;
       $('#ybErr').hidden = false;
     }
   })();

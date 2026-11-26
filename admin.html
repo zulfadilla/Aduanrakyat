@@ -96,6 +96,12 @@
     <label>Status (tekan untuk tukar)</label>
     <div class="steps" id="vSteps"></div>
     <dl class="info" id="vInfo"></dl>
+    <h3>Gambar / video <span id="vLampCount" style="color:var(--muted);font-weight:400"></span></h3>
+    <div class="thumbs" id="vLamp" style="margin:0 0 8px"></div>
+    <label class="btn small" style="display:inline-block">
+      <input type="file" id="vFiles" accept="image/*,video/*" multiple hidden> + Tambah gambar / video
+    </label>
+    <span id="vUpMsg" class="check" style="display:inline"></span>
     <h3>Log progres</h3>
     <ul class="timeline" id="vLog"></ul>
     <form id="logForm">
@@ -229,6 +235,7 @@
         <div class="meta">
           <span>👤 ${esc(a.nama)}</span><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span>
           ${a.agensi ? `<span>🏛️ ${esc(a.agensi)}</span>` : ''}<span>⏱️ ${umur}</span>
+          ${a.lampiran?.length ? `<span>📎 ${a.lampiran.length}</span>` : ''}
           ${me?.pentadbir ? `<span>🎖️ ${esc(ybName(a.yb))}</span>` : ''}
         </div>
       </article>`;
@@ -283,6 +290,18 @@
       ['Butiran', a.butiran ? esc(a.butiran).replace(/\n/g, '<br>') : '-'],
     ];
     $('#vInfo').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    const lamp = a.lampiran || [];
+    $('#vLampCount').textContent = lamp.length ? `(${lamp.length})` : '';
+    $('#vLamp').innerHTML = lamp.length ? lamp.map(l => {
+      const href = YB.safeHref(l.url), th = YB.safeHref(YB.thumbUrl(l));
+      const isVid = String(l.jenis).startsWith('video/');
+      const inner = th && !isVid ? `<img src="${esc(th)}" alt="${esc(l.nama)}" loading="lazy">`
+        : th && isVid && th.startsWith('data:') ? `<video src="${esc(th)}" muted></video>`
+        : `<span>${isVid ? '▶ Video' : '🖼️ Gambar'}</span>`;
+      const tag = `<span class="tag">${l.oleh === 'staf' ? 'Staf · ' : ''}${isVid ? '▶ ' : ''}${esc(l.nama)}</span>`;
+      return href ? `<a class="thumb" href="${esc(href)}" target="_blank" rel="noopener" title="${esc(l.nama)}">${inner}${tag}</a>`
+        : `<div class="thumb" title="Demo: fail besar tidak disimpan">${inner}${tag}</div>`;
+    }).join('') : '<p class="check" style="grid-column:1/-1;margin:0">Tiada lampiran.</p>';
     $('#vLog').innerHTML = [...(a.log || [])].reverse().map(l =>
       `<li class="${l.awam ? '' : 'dalaman'}"><div class="when">${fmtTime(l.masa)}${l.awam ? '' : ' · nota dalaman'}</div>${esc(l.mesej)}</li>`).join('');
     $('#vErr').hidden = true;
@@ -309,6 +328,18 @@
   $('#vClose').onclick = () => { $('#dlgView').close(); };
   $('#dlgView').addEventListener('close', () => { viewingNo = null; });
   $('#vEdit').onclick = () => openForm(data.find(x => x.no === viewingNo));
+  $('#vFiles').addEventListener('change', e => {
+    const list = [...e.target.files]; e.target.value = '';
+    const bad = list.map(YB.checkFile).filter(Boolean);
+    if (bad.length) { $('#vErr').textContent = bad.join(' '); $('#vErr').hidden = false; return; }
+    const no = viewingNo;
+    act(async () => {
+      for (let i = 0; i < list.length; i++) {
+        $('#vUpMsg').textContent = `Memuat naik ${i + 1}/${list.length}…`;
+        await YB.uploadFile(list[i], { no, yb: sesi?.yb, password: sesi?.pw });
+      }
+    }).finally(() => { $('#vUpMsg').textContent = ''; });
+  });
 
   // ---- senarai & tapisan ----
   $('#list').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openView(c.dataset.no); });
@@ -322,9 +353,9 @@
 
   // ---- eksport ----
   $('#btnExport').onclick = () => {
-    const cols = ['no', 'yb', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai'];
+    const cols = ['no', 'yb', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai', 'lampiran'];
     const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = [cols.join(','), ...data.map(a => cols.map(c => cell(c === 'status' ? st(a.status).label : a[c])).join(','))].join('\r\n');
+    const csv = [cols.join(','), ...data.map(a => cols.map(c => cell(c === 'status' ? st(a.status).label : c === 'lampiran' ? (a.lampiran || []).map(l => l.url).filter(u => u.startsWith('https')).join(' ') : a[c])).join(','))].join('\r\n');
     const link = Object.assign(document.createElement('a'), {
       href: URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })), download: `aduan-rakyat-${today()}.csv` });
     link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);

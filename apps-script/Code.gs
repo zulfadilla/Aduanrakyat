@@ -5,6 +5,7 @@
  * Tab "Akaun"  : senarai YB. Satu baris = satu YB (kod, nama, kawasan, kata_laluan, aktif).
  * Tab "Aduan"  : semua aduan; lajur "yb" menentukan aduan itu milik YB mana.
  * Tab "Log"    : log progres setiap aduan.
+ * Tab "Lampiran": senarai gambar/video; fail disimpan dalam folder Google Drive "YB Kasi Setel - Lampiran".
  * Script property ADMIN_PASSWORD = kata laluan Pentadbir (nampak semua YB).
  */
 
@@ -12,6 +13,9 @@ var COLS = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'tajuk', '
   'keutamaan', 'status', 'agensi', 'pegawai', 'tarikhSelesai', 'kemaskini', 'yb'];
 var LOG_COLS = ['no', 'masa', 'mesej', 'awam'];
 var AKAUN_COLS = ['kod', 'nama', 'kawasan', 'kata_laluan', 'aktif'];
+var LAMP_COLS = ['no', 'masa', 'nama', 'jenis', 'fileId', 'url', 'oleh'];
+var MAX_FILES_AWAM = 5, MAX_FILES = 15, MAX_BYTES = 25 * 1024 * 1024;
+var UPLOAD_TTL = 1800; // saat: pengadu boleh muat naik lampiran dalam 30 minit selepas hantar
 var STATUS = { baru: 'Baru Diterima', tindakan: 'Dalam Tindakan', agensi: 'Menunggu Agensi', selesai: 'Job Done ✓' };
 var EDITABLE = ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'saluran', 'keutamaan', 'agensi', 'pegawai', 'tarikh'];
 var MAXLEN = { butiran: 3000, tajuk: 200 };
@@ -47,6 +51,7 @@ function handle(r) {
       return submit(r.data || {}, true, s.pentadbir ? requireYb((r.data || {}).yb).kod : s.akaun.kod);
     case 'update': s = auth(r); return update(s, r.no, r.data || {});
     case 'log': s = auth(r); return addLogAction(s, r.no, r.mesej, !!r.awam);
+    case 'upload': return upload(r);
   }
   throw new Error('Tindakan tidak dikenali.');
 }
@@ -147,7 +152,7 @@ function addLog(no, mesej, awam) {
 
 // ---------- tindakan ----------
 function submit(d, isAdmin, kod) {
-  if (!isAdmin && d.website) return { ok: true, no: kod + '0000-0000' }; // perangkap bot (honeypot)
+  if (!isAdmin && d.website) return { ok: true, no: kod + '0000-0000', uploadToken: Utilities.getUuid() }; // perangkap bot
   ['nama', 'telefon', 'kawasan', 'tajuk'].forEach(function (k) {
     if (!String(d[k] || '').trim()) throw new Error('Sila lengkapkan semua ruangan wajib.');
   });
@@ -171,7 +176,9 @@ function submit(d, isAdmin, kod) {
     };
     sh.appendRow(COLS.map(function (k) { return cell(a[k], k); }));
     addLog(no, 'Aduan diterima melalui ' + a.saluran, true);
-    return { ok: true, no: no };
+    var token = Utilities.getUuid();
+    CacheService.getScriptCache().put('up_' + token, no, UPLOAD_TTL);
+    return { ok: true, no: no, uploadToken: token };
   } finally {
     lock.releaseLock();
   }
@@ -201,6 +208,10 @@ function listAll(s) {
   var items = rows(sheet('Aduan', COLS), COLS).filter(function (a) { return canSee(s, a); });
   var mine = {};
   items.forEach(function (a) { mine[a.no] = true; });
+  var lamp = {};
+  rows(sheet('Lampiran', LAMP_COLS), LAMP_COLS).forEach(function (l) {
+    if (mine[l.no]) (lamp[l.no] = lamp[l.no] || []).push({ nama: l.nama, jenis: l.jenis, fileId: l.fileId, url: l.url, oleh: l.oleh, masa: l.masa });
+  });
   var logs = {};
   rows(sheet('Log', LOG_COLS), LOG_COLS).forEach(function (l) {
     if (mine[l.no]) (logs[l.no] = logs[l.no] || []).push({ masa: l.masa, mesej: l.mesej, awam: l.awam === 'ya' });
@@ -209,6 +220,7 @@ function listAll(s) {
     delete a._row;
     a.yb = normKod(a.yb);
     a.log = logs[a.no] || [];
+    a.lampiran = lamp[a.no] || [];
     return a;
   });
 }
@@ -257,10 +269,61 @@ function addLogAction(s, no, mesej, awam) {
   }
 }
 
+// ---------- lampiran (gambar / video) ----------
+function rootFolder() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('FOLDER_ID');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+  var f = DriveApp.createFolder('YB Kasi Setel - Lampiran');
+  props.setProperty('FOLDER_ID', f.getId());
+  return f;
+}
+
+function folderFor(no) {
+  var root = rootFolder();
+  var it = root.getFoldersByName(no);
+  return it.hasNext() ? it.next() : root.createFolder(no);
+}
+
+function upload(r) {
+  var no, oleh;
+  if (r.token) {
+    no = CacheService.getScriptCache().get('up_' + r.token);
+    if (!no) throw new Error('Tempoh muat naik tamat. Sila hantar gambar kepada pejabat YB melalui WhatsApp.');
+    oleh = 'pengadu';
+  } else {
+    no = findForUser(auth(r), r.no).a.no;
+    oleh = 'staf';
+  }
+  var type = String(r.type || '').toLowerCase();
+  if (!/^(image|video)\/[a-z0-9.+-]+$/.test(type)) throw new Error('Hanya gambar atau video dibenarkan.');
+  var bytes = Utilities.base64Decode(String(r.data || ''));
+  if (!bytes.length) throw new Error('Fail kosong.');
+  if (bytes.length > MAX_BYTES) throw new Error('Fail terlalu besar (maksimum 25MB).');
+  var name = String(r.name || 'lampiran').replace(/[^\w.\- ]+/g, '_').slice(0, 80) || 'lampiran';
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sh = sheet('Lampiran', LAMP_COLS);
+    var count = rows(sh, LAMP_COLS).filter(function (l) { return l.no === no; }).length;
+    if (count >= (oleh === 'pengadu' ? MAX_FILES_AWAM : MAX_FILES)) throw new Error('Had bilangan lampiran telah dicapai.');
+    var file = folderFor(no).createFile(Utilities.newBlob(bytes, type, name));
+    // Sesiapa yang ada link boleh lihat (link hanya dipaparkan dalam panel staf).
+    try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+    sh.appendRow([cell(no), cell(new Date().toISOString()), cell(name), cell(type), cell(file.getId()), cell(file.getUrl()), oleh]);
+    if (oleh === 'staf') addLog(no, 'Lampiran ditambah: ' + name, false);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /** Jalankan sekali dari editor (pilih "setup" > Run) untuk cipta/naik taraf tab dan beri kebenaran. */
 function setup() {
   sheet('Aduan', COLS);
   sheet('Log', LOG_COLS);
+  sheet('Lampiran', LAMP_COLS);
+  rootFolder(); // minta kebenaran Google Drive & cipta folder lampiran
   var ak = sheet('Akaun', AKAUN_COLS);
   if (ak.getLastRow() < 2) ak.appendRow(['CONTOH', 'YB Contoh', 'DUN Contoh', 'tukar-kata-laluan-ini', 'tidak']);
   var pw = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
