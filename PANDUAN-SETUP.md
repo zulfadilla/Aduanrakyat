@@ -86,7 +86,33 @@ Untuk tambah YB baru pada bila-bila masa, cuma tambah satu baris. Tak perlu depl
 Setiap YB kongsi **link khas** mereka di WhatsApp, Facebook dan poster (boleh jadikan kod QR). Dalam panel staf ada butang **Link awam** untuk salin link tersebut.
 Di telefon, pengguna boleh pilih **Add to Home Screen** supaya ia nampak seperti app.
 
+### Link pendek setiap YB
+Setiap YB boleh guna link pendek: tambah **kod YB** selepas alamat laman.
+- `https://<username>.github.io/<nama-repo>/bm`
+- `https://aduanmelaka.pages.dev/bm` (jika guna Cloudflare, lihat di bawah)
+
+Link ini akan terus membuka borang untuk YB tersebut. Butang **Link awam** dalam panel staf menyalin link pendek ini.
+
 ---
+
+## Pilihan: Hos di Cloudflare Pages (percuma, link lebih pendek)
+Ganti GitHub Pages dengan Cloudflare jika mahu link seperti `aduanmelaka.pages.dev` atau domain sendiri. Repo boleh kekal private.
+1. Daftar atau log masuk di <https://dash.cloudflare.com>.
+2. Pergi ke **Workers & Pages → Create → Pages → Connect to Git**, kemudian sambungkan akaun GitHub dan pilih repo ini.
+3. Tetapan build:
+   - **Project name:** nama link anda, cth. `aduanmelaka`. Link jadi `aduanmelaka.pages.dev`.
+   - **Production branch:** `main`
+   - **Framework preset:** `None`
+   - **Build command:** *(biarkan kosong)*
+   - **Build output directory:** `/`
+4. Tekan **Save and Deploy**. Selepas ±1 minit, laman siap di `https://aduanmelaka.pages.dev`.
+5. Setiap kali `main` dikemas kini, Cloudflare akan deploy semula secara automatik.
+
+**Domain sendiri (pilihan):**
+- Beli domain di Cloudflare (**Domain Registration → Register Domains**), cth. `aduanmelaka.com`. Domain `.my` perlu dibeli di penjual tempatan.
+- Dalam projek Pages, pergi ke **Custom domains → Set up a custom domain** dan masukkan domain tersebut. Jika domain dibeli di Cloudflare, DNS ditetapkan secara automatik.
+
+> Jika sudah guna Cloudflare, GitHub Pages boleh dimatikan (**Settings → Pages → Unpublish**) supaya tiada dua link berbeza.
 
 ## Naik taraf (setiap kali `Code.gs` berubah)
 1. Gantikan seluruh `Code.gs` dalam Apps Script dengan versi terbaru, kemudian **Save**.

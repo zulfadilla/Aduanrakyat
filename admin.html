@@ -172,7 +172,7 @@
     refresh();
   }
   $('#btnLink').onclick = async () => {
-    const url = new URL('index.html?yb=' + me.yb.kod.toLowerCase(), location.href).href;
+    const url = new URL(me.yb.kod.toLowerCase(), location.href).href;
     try { await navigator.clipboard.writeText(url); $('#btnLink').textContent = 'Disalin ✓'; }
     catch { prompt('Salin link ini:', url); }
     setTimeout(() => $('#btnLink').textContent = 'Link awam', 2000);
