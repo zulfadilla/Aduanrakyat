@@ -1,14 +1,21 @@
 /**
- * YB Kasi Setel — backend Google Apps Script.
+ * YB Kasi Setel — backend Google Apps Script (berbilang YB).
  * Pasang dalam Google Sheet: Extensions > Apps Script, tampal fail ini, kemudian ikut PANDUAN-SETUP.md.
  *
- * Kata laluan staf disimpan dalam Project Settings > Script properties: ADMIN_PASSWORD
- * Tab "Aduan" dan "Log" dicipta automatik pada permintaan pertama.
+ * Tab "Akaun"  : senarai YB. Satu baris = satu YB (kod, nama, kawasan, kata_laluan, aktif).
+ * Tab "Aduan"  : semua aduan; lajur "yb" menentukan aduan itu milik YB mana.
+ * Tab "Log"    : log progres setiap aduan.
+ * Tab "Lampiran": senarai gambar/video; fail disimpan dalam folder Google Drive "YB Kasi Setel - Lampiran".
+ * Script property ADMIN_PASSWORD = kata laluan Pentadbir (nampak semua YB).
  */
 
 var COLS = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'saluran',
-  'keutamaan', 'status', 'agensi', 'pegawai', 'tarikhSelesai', 'kemaskini'];
+  'keutamaan', 'status', 'agensi', 'pegawai', 'tarikhSelesai', 'kemaskini', 'yb'];
 var LOG_COLS = ['no', 'masa', 'mesej', 'awam'];
+var AKAUN_COLS = ['kod', 'nama', 'kawasan', 'kata_laluan', 'aktif'];
+var LAMP_COLS = ['no', 'masa', 'nama', 'jenis', 'fileId', 'url', 'oleh'];
+var MAX_FILES_AWAM = 5, MAX_FILES = 15, MAX_BYTES = 25 * 1024 * 1024;
+var UPLOAD_TTL = 1800; // saat: pengadu boleh muat naik lampiran dalam 30 minit selepas hantar
 var STATUS = { baru: 'Baru Diterima', tindakan: 'Dalam Tindakan', agensi: 'Menunggu Agensi', selesai: 'Job Done ✓' };
 var EDITABLE = ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'saluran', 'keutamaan', 'agensi', 'pegawai', 'tarikh'];
 var MAXLEN = { butiran: 3000, tajuk: 200 };
@@ -32,27 +39,58 @@ function out(obj) {
 }
 
 function handle(r) {
+  var s;
   switch (r.action) {
-    case 'submit': return submit(r.data || {}, false);
+    case 'senarai': return { ok: true, yb: akaunList().map(pubAkaun) };
+    case 'submit': return submit(r.data || {}, false, requireYb(r.yb).kod);
     case 'status': return statusCheck(r.no, r.phone4);
-    case 'login': requireAdmin(r); return { ok: true };
-    case 'list': requireAdmin(r); return { ok: true, items: listAll() };
-    case 'create': requireAdmin(r); return submit(r.data || {}, true);
-    case 'update': requireAdmin(r); return update(r.no, r.data || {});
-    case 'log': requireAdmin(r); return addLogAction(r.no, r.mesej, !!r.awam);
+    case 'login': s = auth(r); return { ok: true, pentadbir: s.pentadbir, yb: s.akaun ? pubAkaun(s.akaun) : null };
+    case 'list': s = auth(r); return { ok: true, items: listAll(s) };
+    case 'create':
+      s = auth(r);
+      return submit(r.data || {}, true, s.pentadbir ? requireYb((r.data || {}).yb).kod : s.akaun.kod);
+    case 'update': s = auth(r); return update(s, r.no, r.data || {});
+    case 'log': s = auth(r); return addLogAction(s, r.no, r.mesej, !!r.awam);
+    case 'upload': return upload(r);
   }
   throw new Error('Tindakan tidak dikenali.');
 }
 
-// ---------- keselamatan ----------
-function requireAdmin(r) {
-  var pw = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
-  if (!pw) throw new Error('Kata laluan staf belum ditetapkan (Script property ADMIN_PASSWORD).');
-  if (String(r.password || '') !== pw) {
-    Utilities.sleep(1500); // perlahankan cubaan meneka
-    throw new Error('Kata laluan salah.');
-  }
+// ---------- akaun & keselamatan ----------
+function normKod(k) { return String(k || '').trim().toUpperCase(); }
+
+function akaunList() {
+  return rows(sheet('Akaun', AKAUN_COLS), AKAUN_COLS)
+    .map(function (a) { a.kod = normKod(a.kod); return a; })
+    .filter(function (a) { return a.kod && String(a.aktif).trim().toLowerCase() !== 'tidak'; });
 }
+
+function pubAkaun(a) { return { kod: a.kod, nama: a.nama, kawasan: a.kawasan }; }
+
+function requireYb(kod) {
+  var k = normKod(kod);
+  var list = akaunList();
+  for (var i = 0; i < list.length; i++) if (list[i].kod === k) return list[i];
+  throw new Error('Wakil rakyat tidak dijumpai. Sila pilih kawasan yang betul.');
+}
+
+// Pulangkan skop pengguna: { pentadbir: true } atau { pentadbir: false, akaun: {...} }
+function auth(r) {
+  var pw = String(r.password || '');
+  if (normKod(r.yb) === '*') {
+    var admin = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
+    if (admin && pw === admin) return { pentadbir: true };
+  } else {
+    var list = akaunList(), k = normKod(r.yb);
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].kod === k && list[i].kata_laluan && pw === String(list[i].kata_laluan)) return { pentadbir: false, akaun: list[i] };
+    }
+  }
+  Utilities.sleep(1500); // perlahankan cubaan meneka
+  throw new Error('Akaun atau kata laluan salah.');
+}
+
+function canSee(s, a) { return s.pentadbir || normKod(a.yb) === s.akaun.kod; }
 
 // Simpan setiap nilai sebagai teks: elak formula disuntik, dan kekalkan sifar di depan no. telefon.
 function cell(v, key) {
@@ -69,6 +107,8 @@ function sheet(name, cols) {
     sh.appendRow(cols);
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, cols.length).setFontWeight('bold');
+  } else if (sh.getLastColumn() < cols.length) {
+    sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold'); // naik taraf tajuk lajur
   }
   return sh;
 }
@@ -96,6 +136,12 @@ function findAduan(no) {
   return null;
 }
 
+function findForUser(s, no) {
+  var f = findAduan(no);
+  if (!f || !canSee(s, f.a)) throw new Error('Aduan tidak dijumpai.');
+  return f;
+}
+
 function writeAduan(sh, a) {
   sh.getRange(a._row, 1, 1, COLS.length).setValues([COLS.map(function (k) { return cell(a[k], k); })]);
 }
@@ -105,8 +151,8 @@ function addLog(no, mesej, awam) {
 }
 
 // ---------- tindakan ----------
-function submit(d, isAdmin) {
-  if (!isAdmin && d.website) return { ok: true, no: 'A0000-0000' }; // perangkap bot (honeypot)
+function submit(d, isAdmin, kod) {
+  if (!isAdmin && d.website) return { ok: true, no: kod + '0000-0000', uploadToken: Utilities.getUuid() }; // perangkap bot
   ['nama', 'telefon', 'kawasan', 'tajuk'].forEach(function (k) {
     if (!String(d[k] || '').trim()) throw new Error('Sila lengkapkan semua ruangan wajib.');
   });
@@ -114,11 +160,10 @@ function submit(d, isAdmin) {
   lock.waitLock(15000);
   try {
     var sh = sheet('Aduan', COLS);
-    var y = new Date().getFullYear();
-    var prefix = 'A' + y + '-';
+    var prefix = kod + new Date().getFullYear() + '-';
     var max = 0;
     rows(sh, COLS).forEach(function (a) {
-      if (a.no.indexOf(prefix) === 0) max = Math.max(max, Number(a.no.split('-')[1]) || 0);
+      if (a.no.indexOf(prefix) === 0) max = Math.max(max, Number(a.no.slice(prefix.length)) || 0);
     });
     var no = prefix + ('000' + (max + 1)).slice(-4);
     var now = new Date().toISOString();
@@ -127,11 +172,13 @@ function submit(d, isAdmin) {
       kategori: d.kategori || 'Lain-lain', tajuk: d.tajuk, butiran: d.butiran || '',
       saluran: isAdmin ? (d.saluran || 'Walk-in / Pejabat') : 'Borang dalam talian',
       keutamaan: isAdmin ? (d.keutamaan || 'Sederhana') : 'Sederhana', status: 'baru',
-      agensi: isAdmin ? (d.agensi || '') : '', pegawai: isAdmin ? (d.pegawai || '') : '', tarikhSelesai: '', kemaskini: now
+      agensi: isAdmin ? (d.agensi || '') : '', pegawai: isAdmin ? (d.pegawai || '') : '', tarikhSelesai: '', kemaskini: now, yb: kod
     };
     sh.appendRow(COLS.map(function (k) { return cell(a[k], k); }));
     addLog(no, 'Aduan diterima melalui ' + a.saluran, true);
-    return { ok: true, no: no };
+    var token = Utilities.getUuid();
+    CacheService.getScriptCache().put('up_' + token, no, UPLOAD_TTL);
+    return { ok: true, no: no, uploadToken: token };
   } finally {
     lock.releaseLock();
   }
@@ -148,35 +195,46 @@ function statusCheck(no, phone4) {
   var log = rows(sheet('Log', LOG_COLS), LOG_COLS)
     .filter(function (l) { return l.no === a.no && l.awam === 'ya'; })
     .map(function (l) { return { masa: l.masa, mesej: l.mesej }; });
+  var yb = null;
+  akaunList().forEach(function (x) { if (x.kod === normKod(a.yb)) yb = pubAkaun(x); });
   return {
-    ok: true, log: log,
+    ok: true, log: log, yb: yb,
     item: { no: a.no, tarikh: a.tarikh, kawasan: a.kawasan, kategori: a.kategori, tajuk: a.tajuk,
       status: a.status, agensi: a.agensi, tarikhSelesai: a.tarikhSelesai }
   };
 }
 
-function listAll() {
+function listAll(s) {
+  var items = rows(sheet('Aduan', COLS), COLS).filter(function (a) { return canSee(s, a); });
+  var mine = {};
+  items.forEach(function (a) { mine[a.no] = true; });
+  var lamp = {};
+  rows(sheet('Lampiran', LAMP_COLS), LAMP_COLS).forEach(function (l) {
+    if (mine[l.no]) (lamp[l.no] = lamp[l.no] || []).push({ nama: l.nama, jenis: l.jenis, fileId: l.fileId, url: l.url, oleh: l.oleh, masa: l.masa });
+  });
   var logs = {};
   rows(sheet('Log', LOG_COLS), LOG_COLS).forEach(function (l) {
-    (logs[l.no] = logs[l.no] || []).push({ masa: l.masa, mesej: l.mesej, awam: l.awam === 'ya' });
+    if (mine[l.no]) (logs[l.no] = logs[l.no] || []).push({ masa: l.masa, mesej: l.mesej, awam: l.awam === 'ya' });
   });
-  return rows(sheet('Aduan', COLS), COLS).map(function (a) {
+  return items.map(function (a) {
     delete a._row;
+    a.yb = normKod(a.yb);
     a.log = logs[a.no] || [];
+    a.lampiran = lamp[a.no] || [];
     return a;
   });
 }
 
-function update(no, d) {
+function update(s, no, d) {
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
-    var f = findAduan(no);
-    if (!f) throw new Error('Aduan tidak dijumpai.');
+    var f = findForUser(s, no);
     var a = f.a, changed = false;
     EDITABLE.forEach(function (k) {
       if (k in d && String(d[k]) !== a[k]) { a[k] = String(d[k]); changed = true; }
     });
+    if (s.pentadbir && d.yb && normKod(d.yb) !== normKod(a.yb)) { a.yb = requireYb(d.yb).kod; changed = true; }
     if (changed) addLog(a.no, 'Maklumat aduan dikemaskini', false);
     if (d.status && d.status !== a.status && STATUS[d.status]) {
       a.status = d.status;
@@ -191,14 +249,13 @@ function update(no, d) {
   }
 }
 
-function addLogAction(no, mesej, awam) {
+function addLogAction(s, no, mesej, awam) {
   var m = String(mesej || '').trim();
   if (!m) throw new Error('Mesej kosong.');
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
-    var f = findAduan(no);
-    if (!f) throw new Error('Aduan tidak dijumpai.');
+    var f = findForUser(s, no);
     addLog(f.a.no, m, awam);
     if (f.a.status === 'baru') {
       f.a.status = 'tindakan';
@@ -212,10 +269,63 @@ function addLogAction(no, mesej, awam) {
   }
 }
 
-/** Jalankan sekali dari editor (pilih "setup" > Run) untuk cipta tab dan beri kebenaran. */
+// ---------- lampiran (gambar / video) ----------
+function rootFolder() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('FOLDER_ID');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+  var f = DriveApp.createFolder('YB Kasi Setel - Lampiran');
+  props.setProperty('FOLDER_ID', f.getId());
+  return f;
+}
+
+function folderFor(no) {
+  var root = rootFolder();
+  var it = root.getFoldersByName(no);
+  return it.hasNext() ? it.next() : root.createFolder(no);
+}
+
+function upload(r) {
+  var no, oleh;
+  if (r.token) {
+    no = CacheService.getScriptCache().get('up_' + r.token);
+    if (!no) throw new Error('Tempoh muat naik tamat. Sila hantar gambar kepada pejabat YB melalui WhatsApp.');
+    oleh = 'pengadu';
+  } else {
+    no = findForUser(auth(r), r.no).a.no;
+    oleh = 'staf';
+  }
+  var type = String(r.type || '').toLowerCase();
+  if (!/^(image|video)\/[a-z0-9.+-]+$/.test(type)) throw new Error('Hanya gambar atau video dibenarkan.');
+  var bytes = Utilities.base64Decode(String(r.data || ''));
+  if (!bytes.length) throw new Error('Fail kosong.');
+  if (bytes.length > MAX_BYTES) throw new Error('Fail terlalu besar (maksimum 25MB).');
+  var name = String(r.name || 'lampiran').replace(/[^\w.\- ]+/g, '_').slice(0, 80) || 'lampiran';
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sh = sheet('Lampiran', LAMP_COLS);
+    var count = rows(sh, LAMP_COLS).filter(function (l) { return l.no === no; }).length;
+    if (count >= (oleh === 'pengadu' ? MAX_FILES_AWAM : MAX_FILES)) throw new Error('Had bilangan lampiran telah dicapai.');
+    var file = folderFor(no).createFile(Utilities.newBlob(bytes, type, name));
+    // Sesiapa yang ada link boleh lihat (link hanya dipaparkan dalam panel staf).
+    try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+    sh.appendRow([cell(no), cell(new Date().toISOString()), cell(name), cell(type), cell(file.getId()), cell(file.getUrl()), oleh]);
+    if (oleh === 'staf') addLog(no, 'Lampiran ditambah: ' + name, false);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Jalankan sekali dari editor (pilih "setup" > Run) untuk cipta/naik taraf tab dan beri kebenaran. */
 function setup() {
   sheet('Aduan', COLS);
   sheet('Log', LOG_COLS);
+  sheet('Lampiran', LAMP_COLS);
+  rootFolder(); // minta kebenaran Google Drive & cipta folder lampiran
+  var ak = sheet('Akaun', AKAUN_COLS);
+  if (ak.getLastRow() < 2) ak.appendRow(['CONTOH', 'YB Contoh', 'DUN Contoh', 'tukar-kata-laluan-ini', 'tidak']);
   var pw = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
-  Logger.log(pw ? 'Siap. ADMIN_PASSWORD sudah ditetapkan.' : 'Siap. JANGAN LUPA tetapkan ADMIN_PASSWORD dalam Script properties.');
+  Logger.log('Siap. Isi tab "Akaun" dengan senarai YB.' + (pw ? '' : ' JANGAN LUPA tetapkan ADMIN_PASSWORD (Pentadbir).'));
 }
