@@ -16,6 +16,7 @@ Aplikasi web ringkas untuk pejabat YB. Ia boleh dibuka di telefon atau PC, dan t
 
 ## Mula
 - **Setup penuh:** ikut [PANDUAN-SETUP.md](PANDUAN-SETUP.md) (±15 minit).
+- **Selepas berjalan:** cara tambah YB, tukar teks/warna, kemas kini dan pulihkan, lihat [CARA-KEMASKINI.md](CARA-KEMASKINI.md).
 - **Cuba dulu:** buka `index.html` terus. Tanpa `API_URL` dalam `config.js`, aplikasi berjalan dalam mod demo (akaun demo: Bukit Merah / `demo`, Sungai Durian / `demo2`, Pentadbir / `admin`).
 
 ## Struktur
