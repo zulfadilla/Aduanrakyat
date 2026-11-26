@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Staf · YB Kasi Setel</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="banner" id="demoBanner" hidden>Mod demo: data dalam pelayar ini sahaja. Kata laluan staf: <b>demo</b></div>
+<header>
+  <div class="wrap topbar">
+    <div class="brand"><span data-brand="tajuk">YB Kasi Setel</span><small>Panel Staf</small></div>
+    <span id="adminBtns" hidden style="display:contents">
+      <button class="btn" id="btnRefresh" title="Muat semula data">↻</button>
+      <button class="btn" id="btnExport">Eksport CSV</button>
+      <button class="btn" id="btnLogout">Log keluar</button>
+      <button class="btn primary" id="btnNew">+ Aduan</button>
+    </span>
+  </div>
+</header>
+
+<!-- Log masuk -->
+<main class="wrap narrow" id="loginView">
+  <form class="panel" id="loginForm">
+    <h2 style="margin-top:0; font-size:18px">Log masuk staf</h2>
+    <div class="field"><label for="pw">Kata laluan</label><input id="pw" type="password" required autocomplete="current-password"></div>
+    <div id="loginErr" class="notice err" hidden></div>
+    <button class="btn primary block" id="btnLogin">Masuk</button>
+  </form>
+  <p class="foot"><a href="index.html">← Halaman awam</a></p>
+</main>
+
+<!-- Papan pemuka -->
+<main class="wrap" id="appView" hidden>
+  <div id="loadErr" class="notice err" hidden></div>
+  <section class="stats" id="stats"></section>
+  <section class="filters">
+    <input id="q" type="search" placeholder="Cari nama, kawasan, isu, no. aduan…">
+    <select id="fKategori"><option value="">Semua kategori</option></select>
+    <select id="fKeutamaan"><option value="">Semua keutamaan</option><option>Tinggi</option><option>Sederhana</option><option>Rendah</option></select>
+    <select id="fSaluran"><option value="">Semua saluran</option></select>
+    <select id="fSort">
+      <option value="baru">Terkini dahulu</option>
+      <option value="lama">Paling lama dahulu</option>
+      <option value="utama">Keutamaan tertinggi</option>
+    </select>
+  </section>
+  <section class="list" id="list"><div class="empty">Memuatkan…</div></section>
+</main>
+
+<!-- Borang aduan (staf) -->
+<dialog id="dlgForm">
+  <form method="dialog" id="form">
+    <div class="dlg-head"><h2 id="formTitle">Aduan Baru</h2><button class="btn small" value="cancel" formnovalidate>✕</button></div>
+    <div class="dlg-body">
+      <div class="grid2">
+        <div class="field"><label for="nama">Nama pengadu *</label><input id="nama" required></div>
+        <div class="field"><label for="telefon">No. telefon *</label><input id="telefon" type="tel" required></div>
+        <div class="field"><label for="kawasan">Kawasan / kampung / taman *</label><input id="kawasan" required></div>
+        <div class="field"><label for="tarikh">Tarikh terima</label><input id="tarikh" type="date"></div>
+        <div class="field"><label for="kategori">Kategori</label><select id="kategori"></select></div>
+        <div class="field"><label for="keutamaan">Keutamaan</label>
+          <select id="keutamaan"><option>Tinggi</option><option selected>Sederhana</option><option>Rendah</option></select></div>
+        <div class="field"><label for="saluran">Saluran aduan</label>
+          <select id="saluran"><option>Walk-in / Pejabat</option><option>WhatsApp</option><option>Telefon</option><option>Media sosial</option>
+            <option>Program turun padang</option><option>Surat / e-mel</option><option>Borang dalam talian</option></select></div>
+        <div class="field"><label for="agensi">Agensi dirujuk</label><input id="agensi" list="agensiList" placeholder="cth. PBT, JKR, TNB, JKM"></div>
+      </div>
+      <div class="field"><label for="tajuk">Ringkasan isu *</label><input id="tajuk" required maxlength="200"></div>
+      <div class="field"><label for="butiran">Butiran</label><textarea id="butiran" maxlength="3000"></textarea></div>
+      <div class="field"><label for="pegawai">Pegawai bertanggungjawab</label><input id="pegawai" placeholder="Nama staf / PA"></div>
+      <div id="formErr" class="notice err" hidden></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" value="cancel" formnovalidate>Batal</button>
+      <button class="btn primary" id="btnSave" type="button">Simpan</button>
+    </div>
+  </form>
+</dialog>
+<datalist id="agensiList">
+  <option>Pihak Berkuasa Tempatan (PBT)</option><option>JKR</option><option>TNB</option><option>Air / SPAN</option>
+  <option>JKM</option><option>Polis (PDRM)</option><option>Pejabat Daerah & Tanah</option><option>JPS</option>
+  <option>Jabatan Pendidikan</option><option>Jabatan Kesihatan</option><option>Pejabat ADUN</option>
+</datalist>
+
+<!-- Paparan butiran -->
+<dialog id="dlgView">
+  <div class="dlg-head"><h2 id="vTitle"></h2><button class="btn small" id="vClose">✕</button></div>
+  <div class="dlg-body">
+    <label>Status (tekan untuk tukar)</label>
+    <div class="steps" id="vSteps"></div>
+    <dl class="info" id="vInfo"></dl>
+    <h3>Log progres</h3>
+    <ul class="timeline" id="vLog"></ul>
+    <form id="logForm">
+      <div class="addlog">
+        <input id="logText" placeholder="cth. Sudah hubungi PBT, kontraktor dijadual Isnin">
+        <button class="btn primary" id="btnLog">Tambah</button>
+      </div>
+      <label class="check"><input type="checkbox" id="logAwam" checked> Papar kepada pengadu (nyahtanda untuk nota dalaman)</label>
+    </form>
+    <div id="vErr" class="notice err" hidden style="margin-top:12px"></div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" id="vEdit">Edit maklumat</button>
+  </div>
+</dialog>
+
+<script src="config.js"></script>
+<script src="assets/api.js"></script>
+<script>
+(() => {
+  const { esc, st, STATUS, KATEGORI, fmtDate, fmtTime, daysSince, waLink, today } = YB;
+  const $ = s => document.querySelector(s);
+  const PRIO = { Tinggi: 0, Sederhana: 1, Rendah: 2 };
+  const PWKEY = 'ybkasisetel.pw';
+  let pw = '';
+  try { pw = sessionStorage.getItem(PWKEY) || ''; } catch {}
+  let data = [];
+  let statusFilter = '';
+  let editingNo = null;
+  let viewingNo = null;
+
+  YB.applyBranding();
+  const call = (action, payload = {}) => YB.call(action, { ...payload, password: pw });
+
+  // ---- log masuk ----
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    pw = $('#pw').value;
+    $('#btnLogin').disabled = true; $('#loginErr').hidden = true;
+    try {
+      await call('login');
+      try { sessionStorage.setItem(PWKEY, pw); } catch {}
+      enterApp();
+    } catch (err) { $('#loginErr').textContent = err.message; $('#loginErr').hidden = false; }
+    $('#btnLogin').disabled = false;
+  });
+  $('#btnLogout').onclick = () => { try { sessionStorage.removeItem(PWKEY); } catch {} location.reload(); };
+
+  function enterApp() {
+    $('#loginView').hidden = true; $('#appView').hidden = false; $('#adminBtns').hidden = false;
+    refresh();
+  }
+
+  async function refresh() {
+    $('#btnRefresh').disabled = true;
+    try {
+      const r = await call('list');
+      data = r.items;
+      $('#loadErr').hidden = true;
+      const salurans = [...new Set(data.map(a => a.saluran).filter(Boolean))].sort();
+      const cur = $('#fSaluran').value;
+      $('#fSaluran').innerHTML = '<option value="">Semua saluran</option>' + salurans.map(s => `<option>${esc(s)}</option>`).join('');
+      $('#fSaluran').value = salurans.includes(cur) ? cur : '';
+      render();
+      if (viewingNo) openView(viewingNo);
+    } catch (err) {
+      if (/kata laluan/i.test(err.message)) { try { sessionStorage.removeItem(PWKEY); } catch {} location.reload(); return; }
+      $('#loadErr').textContent = err.message; $('#loadErr').hidden = false;
+    }
+    $('#btnRefresh').disabled = false;
+  }
+
+  // ---- render ----
+  function render() {
+    const counts = Object.fromEntries(STATUS.map(s => [s.id, data.filter(a => a.status === s.id).length]));
+    const total = data.length;
+    const pct = total ? Math.round(counts.selesai / total * 100) : 0;
+    const done = data.filter(a => a.status === 'selesai' && a.tarikhSelesai);
+    const avg = done.length ? Math.round(done.reduce((t, a) => t + Math.max(0, new Date(a.tarikhSelesai) - new Date(a.tarikh)) / 86400000, 0) / done.length) : null;
+    $('#stats').innerHTML =
+      `<button class="stat ${statusFilter === '' ? 'active' : ''}" data-s="">
+         <div class="n">${total}</div><div class="l">Jumlah aduan</div>
+         <div class="progress" title="${pct}% selesai"><div style="width:${pct}%"></div></div>
+         <div class="l" style="margin-top:4px">${pct}% selesai${avg !== null ? ` · purata ${avg} hari` : ''}</div>
+       </button>` +
+      STATUS.map(s => `<button class="stat ${statusFilter === s.id ? 'active' : ''}" data-s="${s.id}">
+         <div class="n">${counts[s.id]}</div><div class="l"><span class="dot" style="background:${s.color}"></span>${s.label}</div>
+       </button>`).join('');
+
+    const q = $('#q').value.trim().toLowerCase();
+    const fk = $('#fKategori').value, fp = $('#fKeutamaan').value, fs = $('#fSaluran').value, sort = $('#fSort').value;
+    const rows = data.filter(a =>
+      (!statusFilter || a.status === statusFilter) && (!fk || a.kategori === fk) && (!fp || a.keutamaan === fp) && (!fs || a.saluran === fs) &&
+      (!q || [a.no, a.nama, a.kawasan, a.tajuk, a.butiran, a.agensi, a.pegawai, a.telefon].join(' ').toLowerCase().includes(q)));
+    rows.sort((a, b) =>
+      sort === 'lama' ? String(a.tarikh).localeCompare(b.tarikh) :
+      sort === 'utama' ? ((PRIO[a.keutamaan] ?? 1) - (PRIO[b.keutamaan] ?? 1)) || String(a.tarikh).localeCompare(b.tarikh) :
+      String(b.tarikh).localeCompare(a.tarikh) || b.no.localeCompare(a.no));
+
+    $('#list').innerHTML = rows.length ? rows.map(a => {
+      const s = st(a.status);
+      const umur = a.status === 'selesai' ? `Selesai ${fmtDate(a.tarikhSelesai)}` : `${daysSince(a.tarikh)} hari terbuka`;
+      const prio = PRIO[a.keutamaan] !== undefined ? a.keutamaan.toLowerCase() : 'sederhana';
+      return `<article class="card" style="--c:${s.color}" data-no="${esc(a.no)}">
+        <div class="row1">
+          <span class="id">${esc(a.no)}</span>
+          <span class="title">${esc(a.tajuk)}</span>
+          <span class="badge" style="color:${s.color}">${s.label}</span>
+          <span class="badge" style="color:var(--${prio})">${esc(a.keutamaan)}</span>
+        </div>
+        <div class="meta">
+          <span>👤 ${esc(a.nama)}</span><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span>
+          ${a.agensi ? `<span>🏛️ ${esc(a.agensi)}</span>` : ''}<span>⏱️ ${umur}</span>
+        </div>
+      </article>`;
+    }).join('') : `<div class="empty">${total ? 'Tiada aduan sepadan dengan carian.' : 'Belum ada aduan. Kongsi link halaman awam kepada rakyat, atau tekan <b>+ Aduan</b> untuk rekod aduan walk-in.'}</div>`;
+  }
+
+  // ---- borang ----
+  const FIELDS = ['nama', 'telefon', 'kawasan', 'tarikh', 'kategori', 'keutamaan', 'saluran', 'agensi', 'tajuk', 'butiran', 'pegawai'];
+  function openForm(a) {
+    editingNo = a ? a.no : null;
+    $('#formTitle').textContent = a ? `Edit ${a.no}` : 'Aduan Baru';
+    for (const k of FIELDS) $('#' + k).value = a?.[k] || '';
+    $('#tarikh').value = a?.tarikh ? String(a.tarikh).slice(0, 10) : today();
+    $('#kategori').value = a?.kategori || KATEGORI[0];
+    $('#keutamaan').value = a?.keutamaan || 'Sederhana';
+    $('#saluran').value = a?.saluran || 'Walk-in / Pejabat';
+    $('#formErr').hidden = true;
+    $('#dlgForm').showModal();
+  }
+  $('#btnSave').onclick = async () => {
+    if (!$('#form').reportValidity()) return;
+    const d = {};
+    for (const k of FIELDS) d[k] = $('#' + k).value.trim();
+    const orig = editingNo && data.find(x => x.no === editingNo);
+    if (orig && String(orig.tarikh).slice(0, 10) === d.tarikh) d.tarikh = orig.tarikh; // kekalkan masa asal
+    $('#btnSave').disabled = true;
+    try {
+      if (editingNo) await call('update', { no: editingNo, data: d });
+      else { const r = await call('create', { data: d }); viewingNo = null; alert(`Aduan ${r.no} direkodkan.`); }
+      $('#dlgForm').close();
+      await refresh();
+    } catch (err) { $('#formErr').textContent = err.message; $('#formErr').hidden = false; }
+    $('#btnSave').disabled = false;
+  };
+
+  // ---- paparan ----
+  function openView(no) {
+    const a = data.find(x => x.no === no); if (!a) return;
+    viewingNo = no;
+    $('#vTitle').textContent = `${a.no} · ${a.tajuk}`;
+    $('#vSteps').innerHTML = STATUS.map(s =>
+      `<button class="${a.status === s.id ? 'on' : ''}" style="--c:${s.color}" data-st="${s.id}">${s.label}</button>`).join('');
+    const tel = a.telefon ? `<a href="tel:${esc(a.telefon)}">${esc(a.telefon)}</a> · <a href="${esc(waLink(a.telefon))}" target="_blank" rel="noopener">WhatsApp</a>` : '-';
+    const rows = [
+      ['Pengadu', esc(a.nama)], ['Telefon', tel], ['Kawasan', esc(a.kawasan)], ['Kategori', esc(a.kategori)],
+      ['Keutamaan', esc(a.keutamaan)], ['Saluran', esc(a.saluran)], ['Tarikh terima', fmtDate(a.tarikh)],
+      ['Agensi dirujuk', esc(a.agensi || '-')], ['Pegawai', esc(a.pegawai || '-')],
+      a.status === 'selesai' ? ['Tarikh selesai', fmtDate(a.tarikhSelesai)] : ['Tempoh terbuka', daysSince(a.tarikh) + ' hari'],
+      ['Butiran', a.butiran ? esc(a.butiran).replace(/\n/g, '<br>') : '-'],
+    ];
+    $('#vInfo').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    $('#vLog').innerHTML = [...(a.log || [])].reverse().map(l =>
+      `<li class="${l.awam ? '' : 'dalaman'}"><div class="when">${fmtTime(l.masa)}${l.awam ? '' : ' · nota dalaman'}</div>${esc(l.mesej)}</li>`).join('');
+    $('#vErr').hidden = true;
+    if (!$('#dlgView').open) $('#dlgView').showModal();
+  }
+  async function act(fn) {
+    const btns = document.querySelectorAll('#dlgView button');
+    btns.forEach(b => b.disabled = true); $('#vErr').hidden = true;
+    try { await fn(); await refresh(); }
+    catch (err) { $('#vErr').textContent = err.message; $('#vErr').hidden = false; }
+    document.querySelectorAll('#dlgView button').forEach(b => b.disabled = false);
+  }
+  $('#vSteps').addEventListener('click', e => {
+    const b = e.target.closest('[data-st]'); if (!b) return;
+    const a = data.find(x => x.no === viewingNo);
+    if (!a || a.status === b.dataset.st) return;
+    act(() => call('update', { no: a.no, data: { status: b.dataset.st } }));
+  });
+  $('#logForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const mesej = $('#logText').value.trim(); if (!mesej) return;
+    act(async () => { await call('log', { no: viewingNo, mesej, awam: $('#logAwam').checked }); $('#logText').value = ''; });
+  });
+  $('#vClose').onclick = () => { $('#dlgView').close(); };
+  $('#dlgView').addEventListener('close', () => { viewingNo = null; });
+  $('#vEdit').onclick = () => openForm(data.find(x => x.no === viewingNo));
+
+  // ---- senarai & tapisan ----
+  $('#list').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openView(c.dataset.no); });
+  $('#stats').addEventListener('click', e => { const b = e.target.closest('.stat'); if (b) { statusFilter = b.dataset.s; render(); } });
+  for (const id of ['#q', '#fKategori', '#fKeutamaan', '#fSaluran', '#fSort']) $(id).addEventListener('input', render);
+  $('#btnNew').onclick = () => openForm(null);
+  $('#btnRefresh').onclick = refresh;
+  const kOpts = KATEGORI.map(k => `<option>${esc(k)}</option>`).join('');
+  $('#kategori').innerHTML = kOpts;
+  $('#fKategori').insertAdjacentHTML('beforeend', kOpts);
+
+  // ---- eksport ----
+  $('#btnExport').onclick = () => {
+    const cols = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai'];
+    const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [cols.join(','), ...data.map(a => cols.map(c => cell(c === 'status' ? st(a.status).label : a[c])).join(','))].join('\r\n');
+    const link = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })), download: `aduan-rakyat-${today()}.csv` });
+    link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  };
+
+  // auto-refresh setiap 2 minit supaya aduan baru muncul
+  setInterval(() => { if (!$('#appView').hidden && !$('#dlgForm').open && document.visibilityState === 'visible') refresh(); }, 120000);
+
+  if (pw) enterApp();
+})();
+</script>
+</body>
+</html>

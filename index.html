@@ -4,401 +4,131 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>YB Kasi Setel</title>
-<meta name="description" content="Penjejak aduan rakyat: aduan diterima, progres penyelesaian dan job done.">
-<style>
-  :root {
-    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f0f2f5; --text: #1b1f24; --muted: #5f6b7a;
-    --border: #dde2e8; --accent: #0b5cad; --accent-text: #ffffff;
-    --baru: #6b7280; --tindakan: #b45309; --agensi: #7c3aed; --selesai: #15803d;
-    --tinggi: #b91c1c; --sederhana: #b45309; --rendah: #4b5563;
-    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12151a; --surface: #1b2027; --surface-2: #232a33; --text: #e7eaee; --muted: #9aa5b1;
-      --border: #2e3640; --accent: #4b9be8; --accent-text: #0b1520;
-      --baru: #9ca3af; --tindakan: #f59e0b; --agensi: #a78bfa; --selesai: #34d399;
-      --tinggi: #f87171; --sederhana: #fbbf24; --rendah: #9ca3af;
-      --shadow: none;
-    }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
-  .topbar { display: flex; align-items: center; gap: 12px; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
-  .brand { font-weight: 700; font-size: 18px; margin-right: auto; }
-  .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
-  button, select, input, textarea { font: inherit; color: inherit; }
-  .btn { border: 1px solid var(--border); background: var(--surface); padding: 8px 14px; border-radius: 8px; cursor: pointer; }
-  .btn:hover { background: var(--surface-2); }
-  .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
-  .btn.small { padding: 4px 10px; font-size: 13px; }
-  .btn.danger { color: var(--tinggi); }
-  main { padding: 20px 0 60px; }
-
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; box-shadow: var(--shadow);
-    cursor: pointer; text-align: left; }
-  .stat.active { outline: 2px solid var(--accent); }
-  .stat .n { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .stat .l { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .progress { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; margin-top: 8px; }
-  .progress > div { height: 100%; background: var(--selesai); }
-
-  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-  .filters input, .filters select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
-  .filters input { flex: 1 1 220px; min-width: 0; }
-
-  .list { display: grid; gap: 10px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; box-shadow: var(--shadow);
-    border-left: 4px solid var(--c, var(--border)); cursor: pointer; }
-  .card:hover { background: var(--surface-2); }
-  .card .row1 { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-  .card .id { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .card .title { font-weight: 600; flex: 1 1 200px; }
-  .card .meta { color: var(--muted); font-size: 13px; margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
-  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
-  .empty { text-align: center; color: var(--muted); padding: 40px 16px; background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; }
-
-  dialog { border: 1px solid var(--border); border-radius: 12px; padding: 0; width: min(640px, calc(100vw - 32px));
-    background: var(--surface); color: var(--text); max-height: calc(100vh - 32px); }
-  dialog::backdrop { background: rgba(0,0,0,.45); }
-  .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
-  .dlg-head h2 { margin: 0; font-size: 17px; }
-  .dlg-body { padding: 16px 18px; overflow: auto; }
-  .dlg-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-  .field { margin-bottom: 12px; }
-  .field input, .field select, .field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
-  .field textarea { min-height: 80px; resize: vertical; }
-
-  .steps { display: flex; gap: 4px; margin: 4px 0 16px; }
-  .steps button { flex: 1; border: 1px solid var(--border); background: var(--surface-2); padding: 8px 4px; border-radius: 6px;
-    font-size: 12px; cursor: pointer; }
-  .steps button.on { background: var(--c); color: #fff; border-color: var(--c); font-weight: 600; }
-  @media (prefers-color-scheme: dark) { .steps button.on { color: #111; } }
-  .info { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 14px; }
-  .info dt { color: var(--muted); }
-  .info dd { margin: 0; overflow-wrap: anywhere; }
-  .timeline { list-style: none; padding: 0; margin: 0 0 12px; border-left: 2px solid var(--border); }
-  .timeline li { padding: 0 0 12px 14px; position: relative; }
-  .timeline li::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
-  .timeline .when { font-size: 12px; color: var(--muted); }
-  .addlog { display: flex; gap: 8px; }
-  .addlog input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
-  h3 { font-size: 14px; margin: 16px 0 8px; }
-</style>
+<meta name="description" content="Hantar aduan kepada pejabat YB dan semak status penyelesaiannya.">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+<div class="banner" id="demoBanner" hidden>Mod demo: aduan hanya disimpan dalam pelayar ini. Pejabat perlu siapkan sambungan Google Sheet (lihat PANDUAN-SETUP.md).</div>
 <header>
-  <div class="wrap topbar">
-    <div class="brand">YB Kasi Setel <small>Penjejak Aduan Rakyat</small></div>
-    <button class="btn" id="btnExport" title="Muat turun salinan data (CSV)">Eksport CSV</button>
-    <button class="btn" id="btnMore">Sandaran ▾</button>
-    <button class="btn primary" id="btnNew">+ Aduan Baru</button>
+  <div class="wrap narrow topbar">
+    <div class="brand"><span data-brand="tajuk">YB Kasi Setel</span><small data-brand="subtajuk">Saluran Aduan Rakyat</small></div>
   </div>
 </header>
 
-<main class="wrap">
-  <section class="stats" id="stats"></section>
+<main class="wrap narrow">
+  <div class="tabs" role="tablist">
+    <button class="on" data-tab="hantar" role="tab">Hantar Aduan</button>
+    <button data-tab="semak" role="tab">Semak Status</button>
+  </div>
 
-  <section class="filters">
-    <input id="q" type="search" placeholder="Cari nama, kawasan, isu, no. aduan…">
-    <select id="fKategori"><option value="">Semua kategori</option></select>
-    <select id="fKeutamaan">
-      <option value="">Semua keutamaan</option>
-      <option>Tinggi</option><option>Sederhana</option><option>Rendah</option>
-    </select>
-    <select id="fSort">
-      <option value="baru">Terkini dahulu</option>
-      <option value="lama">Paling lama dahulu</option>
-      <option value="utama">Keutamaan tertinggi</option>
-    </select>
+  <!-- Hantar aduan -->
+  <section id="tab-hantar">
+    <div id="okBox" class="notice ok" hidden>
+      <div>Terima kasih. Aduan anda telah diterima. No. rujukan:</div>
+      <div class="refno" id="okNo"></div>
+      <p style="margin:8px 0 0">Simpan nombor ini. Guna tab <b>Semak Status</b> dengan no. rujukan dan 4 digit terakhir telefon anda untuk lihat progres.</p>
+      <p style="margin:10px 0 0; display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn small" id="btnCopy">Salin no. rujukan</button>
+        <button class="btn small" id="btnAgain">Hantar aduan lain</button>
+      </p>
+    </div>
+
+    <form id="form" class="panel">
+      <div class="grid2">
+        <div class="field"><label for="nama">Nama penuh *</label><input id="nama" required maxlength="120" autocomplete="name"></div>
+        <div class="field"><label for="telefon">No. telefon *</label><input id="telefon" type="tel" required maxlength="20" autocomplete="tel" placeholder="cth. 012-3456789"></div>
+      </div>
+      <div class="field"><label for="kawasan">Kawasan / kampung / taman *</label><input id="kawasan" required maxlength="150"></div>
+      <div class="field"><label for="kategori">Kategori aduan</label><select id="kategori"></select></div>
+      <div class="field"><label for="tajuk">Ringkasan isu *</label><input id="tajuk" required maxlength="200" placeholder="cth. Lampu jalan rosak di Jalan Melati 3"></div>
+      <div class="field"><label for="butiran">Butiran (lokasi tepat, sejak bila, dll.)</label><textarea id="butiran" maxlength="3000"></textarea></div>
+      <div class="hp" aria-hidden="true"><label for="website">Jangan isi</label><input id="website" tabindex="-1" autocomplete="off"></div>
+      <p class="check" style="margin-bottom:12px">Maklumat anda hanya digunakan oleh pejabat YB untuk menyelesaikan aduan ini.</p>
+      <div id="formErr" class="notice err" hidden></div>
+      <button class="btn primary block" id="btnSubmit">Hantar Aduan</button>
+    </form>
   </section>
 
-  <section class="list" id="list"></section>
+  <!-- Semak status -->
+  <section id="tab-semak" hidden>
+    <form id="semakForm" class="panel">
+      <div class="grid2">
+        <div class="field"><label for="sNo">No. rujukan</label><input id="sNo" required placeholder="cth. A2026-0012" autocapitalize="characters"></div>
+        <div class="field"><label for="sTel">4 digit terakhir telefon</label><input id="sTel" required inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="cth. 6789"></div>
+      </div>
+      <button class="btn primary block" id="btnSemak">Semak</button>
+    </form>
+    <div id="semakErr" class="notice err" hidden style="margin-top:14px"></div>
+    <div id="semakHasil" class="panel" hidden style="margin-top:14px"></div>
+  </section>
+
+  <p class="foot"><a href="admin.html">Log masuk staf</a></p>
 </main>
 
-<!-- Borang aduan -->
-<dialog id="dlgForm">
-  <form method="dialog" id="form">
-    <div class="dlg-head"><h2 id="formTitle">Aduan Baru</h2><button class="btn small" value="cancel" formnovalidate>✕</button></div>
-    <div class="dlg-body">
-      <div class="grid2">
-        <div class="field"><label for="nama">Nama pengadu *</label><input id="nama" required></div>
-        <div class="field"><label for="telefon">No. telefon</label><input id="telefon" type="tel"></div>
-        <div class="field"><label for="kawasan">Kawasan / kampung / taman *</label><input id="kawasan" required></div>
-        <div class="field"><label for="tarikh">Tarikh terima</label><input id="tarikh" type="date"></div>
-        <div class="field"><label for="kategori">Kategori</label>
-          <select id="kategori"></select></div>
-        <div class="field"><label for="keutamaan">Keutamaan</label>
-          <select id="keutamaan"><option>Tinggi</option><option selected>Sederhana</option><option>Rendah</option></select></div>
-        <div class="field"><label for="saluran">Saluran aduan</label>
-          <select id="saluran"><option>Walk-in / Pejabat</option><option>WhatsApp</option><option>Telefon</option>
-            <option>Media sosial</option><option>Program turun padang</option><option>Surat / e-mel</option></select></div>
-        <div class="field"><label for="agensi">Agensi dirujuk</label><input id="agensi" placeholder="cth. PBT, JKR, TNB, JKM" list="agensiList"></div>
-      </div>
-      <div class="field"><label for="tajuk">Ringkasan isu *</label><input id="tajuk" required placeholder="cth. Lampu jalan rosak di Jalan Melati 3"></div>
-      <div class="field"><label for="butiran">Butiran</label><textarea id="butiran"></textarea></div>
-      <div class="field"><label for="pegawai">Pegawai bertanggungjawab</label><input id="pegawai" placeholder="Nama staf / PA"></div>
-    </div>
-    <div class="dlg-foot">
-      <button class="btn" value="cancel" formnovalidate>Batal</button>
-      <button class="btn primary" value="save" id="btnSave">Simpan</button>
-    </div>
-  </form>
-</dialog>
-<datalist id="agensiList">
-  <option>Pihak Berkuasa Tempatan (PBT)</option><option>JKR</option><option>TNB</option><option>Air / SPAN</option>
-  <option>JKM</option><option>Polis (PDRM)</option><option>Pejabat Daerah & Tanah</option><option>JPS</option>
-  <option>Jabatan Pendidikan</option><option>Jabatan Kesihatan</option><option>Pejabat ADUN</option>
-</datalist>
-
-<!-- Paparan butiran -->
-<dialog id="dlgView">
-  <div class="dlg-head"><h2 id="vTitle"></h2><button class="btn small" id="vClose">✕</button></div>
-  <div class="dlg-body">
-    <label>Status</label>
-    <div class="steps" id="vSteps"></div>
-    <dl class="info" id="vInfo"></dl>
-    <h3>Log progres</h3>
-    <ul class="timeline" id="vLog"></ul>
-    <form class="addlog" id="logForm">
-      <input id="logText" placeholder="Tambah kemaskini, cth. Sudah hubungi PBT, kontraktor dijadual Isnin">
-      <button class="btn primary">Tambah</button>
-    </form>
-  </div>
-  <div class="dlg-foot">
-    <button class="btn danger" id="vDelete">Padam</button>
-    <button class="btn" id="vEdit">Edit</button>
-  </div>
-</dialog>
-
-<dialog id="dlgMore">
-  <div class="dlg-head"><h2>Sandaran data</h2><button class="btn small" id="mClose">✕</button></div>
-  <div class="dlg-body">
-    <p>Data disimpan dalam pelayar ini sahaja. Muat turun sandaran secara berkala, dan pulihkan pada peranti lain jika perlu.</p>
-    <p><button class="btn" id="btnBackup">Muat turun sandaran (JSON)</button></p>
-    <p><label for="fileRestore">Pulihkan daripada fail sandaran</label><input type="file" id="fileRestore" accept="application/json,.json"></p>
-    <p><button class="btn" id="btnDemo">Masukkan data contoh</button></p>
-  </div>
-</dialog>
-
+<script src="config.js"></script>
+<script src="assets/api.js"></script>
 <script>
 (() => {
-  const KEY = 'ybkasisetel.aduan.v1';
-  const STATUS = [
-    { id: 'baru', label: 'Baru Diterima', color: 'var(--baru)' },
-    { id: 'tindakan', label: 'Dalam Tindakan', color: 'var(--tindakan)' },
-    { id: 'agensi', label: 'Menunggu Agensi', color: 'var(--agensi)' },
-    { id: 'selesai', label: 'Job Done ✓', color: 'var(--selesai)' },
-  ];
-  const KATEGORI = ['Jalan & Infrastruktur', 'Lampu Jalan', 'Longkang & Banjir', 'Sampah & Kebersihan', 'Air', 'Elektrik',
-    'Kebajikan & Bantuan', 'Perumahan', 'Kesihatan', 'Pendidikan', 'Keselamatan', 'Tanah', 'Lain-lain'];
-  const PRIO = { Tinggi: 0, Sederhana: 1, Rendah: 2 };
+  const { esc, st, STATUS, KATEGORI, fmtDate, fmtTime, call } = YB;
   const $ = s => document.querySelector(s);
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const today = () => new Date().toISOString().slice(0, 10);
-  const fmtDate = d => d ? new Date(d).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-  const fmtTime = d => new Date(d).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const daysSince = d => Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86400000));
-  const st = id => STATUS.find(s => s.id === id) || STATUS[0];
+  YB.applyBranding();
+  $('#kategori').innerHTML = KATEGORI.map(k => `<option>${esc(k)}</option>`).join('');
 
-  let data = load();
-  let statusFilter = '';
-  let editingId = null;
-  let viewingId = null;
-
-  function load() {
-    try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }
+  // tab
+  function showTab(t) {
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+    $('#tab-hantar').hidden = t !== 'hantar';
+    $('#tab-semak').hidden = t !== 'semak';
   }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); }
-    catch { alert('Gagal menyimpan dalam pelayar. Sila muat turun sandaran.'); }
-    render();
-  }
-  function nextNo() {
-    const y = new Date().getFullYear();
-    const n = data.filter(a => a.no.startsWith(`A${y}-`)).map(a => +a.no.split('-')[1]).reduce((m, x) => Math.max(m, x), 0) + 1;
-    return `A${y}-${String(n).padStart(4, '0')}`;
-  }
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 
-  // ---- render ----
-  function render() {
-    const counts = Object.fromEntries(STATUS.map(s => [s.id, data.filter(a => a.status === s.id).length]));
-    const total = data.length;
-    const pct = total ? Math.round(counts.selesai / total * 100) : 0;
-    const done = data.filter(a => a.status === 'selesai' && a.tarikhSelesai);
-    const avg = done.length ? Math.round(done.reduce((t, a) => t + (new Date(a.tarikhSelesai) - new Date(a.tarikh)) / 86400000, 0) / done.length) : null;
-    $('#stats').innerHTML =
-      `<button class="stat ${statusFilter === '' ? 'active' : ''}" data-s="">
-         <div class="n">${total}</div><div class="l">Jumlah aduan</div>
-         <div class="progress" title="${pct}% selesai"><div style="width:${pct}%"></div></div>
-         <div class="l" style="margin-top:4px">${pct}% selesai${avg !== null ? ` · purata ${avg} hari` : ''}</div>
-       </button>` +
-      STATUS.map(s => `<button class="stat ${statusFilter === s.id ? 'active' : ''}" data-s="${s.id}">
-         <div class="n">${counts[s.id]}</div><div class="l"><span class="dot" style="background:${s.color}"></span>${s.label}</div>
-       </button>`).join('');
-
-    const q = $('#q').value.trim().toLowerCase();
-    const fk = $('#fKategori').value, fp = $('#fKeutamaan').value, sort = $('#fSort').value;
-    let rows = data.filter(a =>
-      (!statusFilter || a.status === statusFilter) && (!fk || a.kategori === fk) && (!fp || a.keutamaan === fp) &&
-      (!q || [a.no, a.nama, a.kawasan, a.tajuk, a.butiran, a.agensi, a.pegawai, a.telefon].join(' ').toLowerCase().includes(q)));
-    rows.sort((a, b) =>
-      sort === 'lama' ? a.tarikh.localeCompare(b.tarikh) :
-      sort === 'utama' ? (PRIO[a.keutamaan] - PRIO[b.keutamaan]) || a.tarikh.localeCompare(b.tarikh) :
-      b.tarikh.localeCompare(a.tarikh) || b.no.localeCompare(a.no));
-
-    $('#list').innerHTML = rows.length ? rows.map(a => {
-      const s = st(a.status);
-      const umur = a.status === 'selesai' ? `Selesai ${fmtDate(a.tarikhSelesai)}` : `${daysSince(a.tarikh)} hari terbuka`;
-      return `<article class="card" style="--c:${s.color}" data-id="${a.id}">
-        <div class="row1">
-          <span class="id">${esc(a.no)}</span>
-          <span class="title">${esc(a.tajuk)}</span>
-          <span class="badge" style="color:${s.color}">${s.label}</span>
-          <span class="badge" style="color:var(--${a.keutamaan.toLowerCase()})">${esc(a.keutamaan)}</span>
-        </div>
-        <div class="meta">
-          <span>👤 ${esc(a.nama)}</span><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span>
-          ${a.agensi ? `<span>🏛️ ${esc(a.agensi)}</span>` : ''}<span>⏱️ ${umur}</span>
-        </div>
-      </article>`;
-    }).join('') : `<div class="empty">${total ? 'Tiada aduan sepadan dengan carian.' : 'Belum ada aduan. Tekan <b>+ Aduan Baru</b> untuk mula, atau masukkan data contoh di menu Sandaran.'}</div>`;
-  }
-
-  // ---- form ----
-  function openForm(a) {
-    editingId = a ? a.id : null;
-    $('#formTitle').textContent = a ? `Edit ${a.no}` : 'Aduan Baru';
-    for (const k of ['nama', 'telefon', 'kawasan', 'agensi', 'tajuk', 'butiran', 'pegawai']) $('#' + k).value = a?.[k] || '';
-    $('#tarikh').value = a?.tarikh || today();
-    $('#kategori').value = a?.kategori || KATEGORI[0];
-    $('#keutamaan').value = a?.keutamaan || 'Sederhana';
-    $('#saluran').value = a?.saluran || 'Walk-in / Pejabat';
-    $('#dlgForm').showModal();
-  }
-  $('#dlgForm').addEventListener('close', () => {
-    if ($('#dlgForm').returnValue !== 'save') return;
-    const f = {};
-    for (const k of ['nama', 'telefon', 'kawasan', 'tarikh', 'kategori', 'keutamaan', 'saluran', 'agensi', 'tajuk', 'butiran', 'pegawai'])
-      f[k] = $('#' + k).value.trim();
-    f.tarikh ||= today();
-    if (editingId) {
-      const a = data.find(x => x.id === editingId);
-      Object.assign(a, f);
-      a.log.push({ t: new Date().toISOString(), msg: 'Maklumat aduan dikemaskini' });
-    } else {
-      data.push({ id: crypto.randomUUID?.() || String(Date.now() + Math.random()), no: nextNo(), status: 'baru', ...f,
-        log: [{ t: new Date().toISOString(), msg: `Aduan diterima melalui ${f.saluran}` }] });
-    }
-    save();
-    if (editingId && viewingId === editingId) openView(editingId);
-  });
-
-  // ---- view ----
-  function openView(id) {
-    const a = data.find(x => x.id === id); if (!a) return;
-    viewingId = id;
-    $('#vTitle').textContent = `${a.no} · ${a.tajuk}`;
-    $('#vSteps').innerHTML = STATUS.map(s =>
-      `<button class="${a.status === s.id ? 'on' : ''}" style="--c:${s.color}" data-st="${s.id}">${s.label}</button>`).join('');
-    const rows = [
-      ['Pengadu', a.nama], ['Telefon', a.telefon ? `<a href="tel:${esc(a.telefon)}">${esc(a.telefon)}</a> · <a href="https://wa.me/${esc(a.telefon.replace(/\D/g, '').replace(/^0/, '60'))}" target="_blank" rel="noopener">WhatsApp</a>` : '-'],
-      ['Kawasan', a.kawasan], ['Kategori', a.kategori], ['Keutamaan', a.keutamaan], ['Saluran', a.saluran],
-      ['Tarikh terima', fmtDate(a.tarikh)], ['Agensi dirujuk', a.agensi || '-'], ['Pegawai', a.pegawai || '-'],
-      ...(a.status === 'selesai' ? [['Tarikh selesai', fmtDate(a.tarikhSelesai)]] : [['Tempoh terbuka', daysSince(a.tarikh) + ' hari']]),
-      ['Butiran', a.butiran ? esc(a.butiran).replace(/\n/g, '<br>') : '-'],
-    ];
-    $('#vInfo').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${k === 'Telefon' || k === 'Butiran' ? v : esc(v)}</dd>`).join('');
-    $('#vLog').innerHTML = [...a.log].reverse().map(l => `<li><div class="when">${fmtTime(l.t)}</div>${esc(l.msg)}</li>`).join('');
-    if (!$('#dlgView').open) $('#dlgView').showModal();
-  }
-  $('#vSteps').addEventListener('click', e => {
-    const b = e.target.closest('[data-st]'); if (!b) return;
-    const a = data.find(x => x.id === viewingId);
-    if (a.status === b.dataset.st) return;
-    a.status = b.dataset.st;
-    a.tarikhSelesai = a.status === 'selesai' ? today() : undefined;
-    a.log.push({ t: new Date().toISOString(), msg: `Status ditukar kepada "${st(a.status).label}"` });
-    save(); openView(a.id);
-  });
-  $('#logForm').addEventListener('submit', e => {
+  // hantar
+  $('#form').addEventListener('submit', async e => {
     e.preventDefault();
-    const msg = $('#logText').value.trim(); if (!msg) return;
-    const a = data.find(x => x.id === viewingId);
-    a.log.push({ t: new Date().toISOString(), msg });
-    if (a.status === 'baru') { a.status = 'tindakan'; a.log.push({ t: new Date().toISOString(), msg: 'Status ditukar kepada "Dalam Tindakan"' }); }
-    $('#logText').value = '';
-    save(); openView(a.id);
-  });
-  $('#vClose').onclick = () => { $('#dlgView').close(); viewingId = null; };
-  $('#vEdit').onclick = () => openForm(data.find(x => x.id === viewingId));
-  $('#vDelete').onclick = () => {
-    const a = data.find(x => x.id === viewingId);
-    if (!confirm(`Padam aduan ${a.no}? Tindakan ini tidak boleh dibatalkan.`)) return;
-    data = data.filter(x => x.id !== viewingId);
-    $('#dlgView').close(); viewingId = null; save();
-  };
-
-  // ---- list & filters ----
-  $('#list').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openView(c.dataset.id); });
-  $('#stats').addEventListener('click', e => { const b = e.target.closest('.stat'); if (b) { statusFilter = b.dataset.s; render(); } });
-  for (const id of ['#q', '#fKategori', '#fKeutamaan', '#fSort']) $(id).addEventListener('input', render);
-  $('#btnNew').onclick = () => openForm(null);
-  const kOpts = KATEGORI.map(k => `<option>${k}</option>`).join('');
-  $('#kategori').innerHTML = kOpts;
-  $('#fKategori').insertAdjacentHTML('beforeend', kOpts);
-
-  // ---- export / backup ----
-  function download(name, content, type) {
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([content], { type })), download: name });
-    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }
-  $('#btnExport').onclick = () => {
-    const cols = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai'];
-    const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = [cols.join(','), ...data.map(a => cols.map(c => cell(c === 'status' ? st(a.status).label : a[c])).join(','))].join('\r\n');
-    download(`aduan-rakyat-${today()}.csv`, '﻿' + csv, 'text/csv');
-  };
-  $('#btnMore').onclick = () => $('#dlgMore').showModal();
-  $('#mClose').onclick = () => $('#dlgMore').close();
-  $('#btnBackup').onclick = () => download(`sandaran-aduan-${today()}.json`, JSON.stringify(data, null, 2), 'application/json');
-  $('#fileRestore').onchange = async e => {
-    const f = e.target.files[0]; if (!f) return;
+    const data = {};
+    for (const k of ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'website']) data[k] = $('#' + k).value.trim();
+    if (data.telefon.replace(/\D/g, '').length < 9) { showErr('Sila masukkan no. telefon yang sah.'); return; }
+    $('#btnSubmit').disabled = true; $('#btnSubmit').textContent = 'Menghantar…'; $('#formErr').hidden = true;
     try {
-      const arr = JSON.parse(await f.text());
-      if (!Array.isArray(arr)) throw 0;
-      if (!confirm(`Gantikan data semasa (${data.length} aduan) dengan ${arr.length} aduan daripada fail?`)) return;
-      data = arr; save(); $('#dlgMore').close();
-    } catch { alert('Fail sandaran tidak sah.'); }
-    e.target.value = '';
-  };
-  $('#btnDemo').onclick = () => {
-    const d = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
-    const mk = (tajuk, nama, kawasan, kategori, keutamaan, status, umur, agensi, logs) => ({
-      id: String(Math.random()).slice(2), no: '', tajuk, nama, kawasan, kategori, keutamaan, status, tarikh: d(umur),
-      telefon: '012-3456789', saluran: 'WhatsApp', agensi, butiran: '', pegawai: 'PA Aiman',
-      tarikhSelesai: status === 'selesai' ? d(Math.max(0, umur - 6)) : undefined,
-      log: [{ t: d(umur) + 'T09:00:00', msg: 'Aduan diterima melalui WhatsApp' }, ...logs.map((m, i) => ({ t: d(umur - i - 1) + 'T15:00:00', msg: m }))] });
-    const demo = [
-      mk('Lampu jalan rosak di Jalan Melati 3', 'Pn. Rosnah', 'Taman Melati', 'Lampu Jalan', 'Sederhana', 'selesai', 14, 'PBT', ['Dirujuk kepada PBT', 'Lampu telah dibaiki']),
-      mk('Longkang tersumbat, air naik bila hujan', 'En. Kamal', 'Kg. Baru Hilir', 'Longkang & Banjir', 'Tinggi', 'agensi', 9, 'JPS', ['Lawatan tapak bersama ketua kampung', 'Surat dihantar ke JPS']),
-      mk('Permohonan bantuan JKM untuk warga emas', 'Mak Cik Senah', 'Kg. Sungai Durian', 'Kebajikan & Bantuan', 'Tinggi', 'tindakan', 4, 'JKM', ['Borang diisi bersama pengadu']),
-      mk('Jalan berlubang depan sekolah', 'Cikgu Halim', 'Jalan Sekolah, Pekan', 'Jalan & Infrastruktur', 'Tinggi', 'baru', 1, '', []),
-      mk('Sampah tidak dikutip 2 minggu', 'En. Ravi', 'Taman Sri Indah', 'Sampah & Kebersihan', 'Sederhana', 'selesai', 20, 'PBT', ['Hubungi kontraktor kutipan', 'Kutipan dipulihkan']),
-    ];
-    demo.forEach(a => { a.no = nextNo(); data.push(a); });
-    save(); $('#dlgMore').close();
+      const r = await call('submit', { data });
+      $('#okNo').textContent = r.no;
+      $('#okBox').hidden = false; $('#form').hidden = true;
+      $('#sNo').value = r.no; $('#sTel').value = data.telefon.replace(/\D/g, '').slice(-4);
+      window.scrollTo(0, 0);
+    } catch (err) { showErr(err.message); }
+    $('#btnSubmit').disabled = false; $('#btnSubmit').textContent = 'Hantar Aduan';
+  });
+  function showErr(m) { $('#formErr').textContent = m; $('#formErr').hidden = false; }
+  $('#btnAgain').onclick = () => { $('#form').reset(); $('#form').hidden = false; $('#okBox').hidden = true; };
+  $('#btnCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText($('#okNo').textContent); $('#btnCopy').textContent = 'Disalin ✓'; } catch {}
   };
 
-  render();
+  // semak
+  $('#semakForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('#btnSemak').disabled = true; $('#semakErr').hidden = true; $('#semakHasil').hidden = true;
+    try {
+      const { item: a, log } = await call('status', { no: $('#sNo').value.trim(), phone4: $('#sTel').value.trim() });
+      const s = st(a.status);
+      const idx = STATUS.findIndex(x => x.id === a.status);
+      $('#semakHasil').innerHTML = `
+        <div class="card" style="--c:${s.color}; cursor:default; box-shadow:none">
+          <div class="row1"><span class="id">${esc(a.no)}</span><span class="title">${esc(a.tajuk)}</span></div>
+          <div class="meta"><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span><span>📅 ${fmtDate(a.tarikh)}</span></div>
+        </div>
+        <h3>Status semasa</h3>
+        <div class="steps">${STATUS.map((x, i) => `<span class="${i <= idx ? 'on' : ''}" style="--c:${x.color}">${x.label}</span>`).join('')}</div>
+        ${a.agensi ? `<p>Dirujuk kepada: <b>${esc(a.agensi)}</b></p>` : ''}
+        ${a.status === 'selesai' ? `<p>Selesai pada <b>${fmtDate(a.tarikhSelesai)}</b>. Terima kasih atas kesabaran anda.</p>` : ''}
+        <h3>Perkembangan</h3>
+        <ul class="timeline">${[...log].reverse().map(l => `<li><div class="when">${fmtTime(l.masa)}</div>${esc(l.mesej)}</li>`).join('')}</ul>`;
+      $('#semakHasil').hidden = false;
+    } catch (err) { $('#semakErr').textContent = err.message; $('#semakErr').hidden = false; }
+    $('#btnSemak').disabled = false;
+  });
+
+  if (location.hash === '#semak') showTab('semak');
 })();
 </script>
 </body>
