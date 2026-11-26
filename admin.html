@@ -5,13 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel Staf · YB Kasi Setel</title>
 <meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0b1f5c">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <div class="banner" id="demoBanner" hidden>Mod demo: data dalam pelayar ini sahaja. Akaun demo: <b>Bukit Merah / demo</b>, <b>Sungai Durian / demo2</b>, <b>Pentadbir / admin</b></div>
 <header>
   <div class="wrap topbar">
-    <div class="brand"><span data-brand="tajuk">YB Kasi Setel</span><small id="whoami">Panel Staf</small></div>
+    <div class="brand"><span class="logo" aria-hidden="true"></span>
+      <div class="brand-text"><span data-brand="tajuk">YB Kasi Setel</span><small id="whoami">Panel Staf</small></div></div>
     <span id="adminBtns" hidden style="display:contents">
       <button class="btn" id="btnRefresh" title="Muat semula data">↻</button>
       <button class="btn" id="btnLink" title="Salin link aduan awam untuk kawasan anda">Link awam</button>
@@ -23,9 +28,10 @@
 </header>
 
 <!-- Log masuk -->
-<main class="wrap narrow" id="loginView">
+<main class="wrap narrow login-wrap" id="loginView">
   <form class="panel" id="loginForm">
-    <h2 style="margin-top:0; font-size:18px">Log masuk staf</h2>
+    <h2>Log masuk staf</h2>
+    <p class="sub">Untuk pejabat YB dan pentadbir sahaja.</p>
     <div class="field"><label for="lYb">Akaun</label><select id="lYb" required><option value="">Memuatkan…</option></select></div>
     <div class="field"><label for="pw">Kata laluan</label><input id="pw" type="password" required autocomplete="current-password"></div>
     <div id="loginErr" class="notice err" hidden></div>
