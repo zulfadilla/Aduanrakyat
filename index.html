@@ -65,6 +65,12 @@
         <div class="field"><label for="telefon">No. telefon *</label><input id="telefon" type="tel" required maxlength="20" autocomplete="tel" placeholder="cth. 012-3456789"></div>
       </div>
       <div class="field"><label for="kawasan">Lokasi (kampung / taman / jalan) *</label><input id="kawasan" required maxlength="150"></div>
+      <div class="grid2">
+        <div class="field"><label for="poskod">Poskod lokasi</label><input id="poskod" inputmode="numeric" maxlength="5" pattern="\d{5}" placeholder="cth. 76100"></div>
+        <div class="field"><label>Lokasi GPS (pilihan)</label>
+          <button type="button" class="btn gps" id="btnGps">📍 Kongsi lokasi saya</button>
+          <div class="picked" id="gpsMsg"></div></div>
+      </div>
       <div class="field"><label for="kategori">Kategori aduan</label><select id="kategori"></select></div>
       <div class="field"><label for="tajuk">Ringkasan isu *</label><input id="tajuk" required maxlength="200" placeholder="cth. Lampu jalan rosak di Jalan Melati 3"></div>
       <div class="field"><label for="butiran">Butiran (lokasi tepat, sejak bila, dll.)</label><textarea id="butiran" maxlength="3000"></textarea></div>
@@ -78,6 +84,7 @@
       </div>
       <div class="hp" aria-hidden="true"><label for="website">Jangan isi</label><input id="website" tabindex="-1" autocomplete="off"></div>
       <p class="check" style="margin-bottom:12px">Maklumat dan gambar anda hanya digunakan oleh pejabat YB untuk menyelesaikan aduan ini.</p>
+      <div id="turnstile" class="turnstile"></div>
       <div id="formErr" class="notice err" hidden></div>
       <button class="btn primary block" id="btnSubmit" disabled>Hantar Aduan</button>
     </form>
@@ -213,16 +220,52 @@
     renderThumbs();
   });
 
+  // ---------- lokasi GPS ----------
+  let gps = null;
+  $('#btnGps').addEventListener('click', () => {
+    if (!navigator.geolocation) { $('#gpsMsg').textContent = ''; showErr('Peranti anda tidak menyokong lokasi GPS.'); return; }
+    $('#btnGps').disabled = true; $('#btnGps').textContent = 'Mencari lokasi…';
+    navigator.geolocation.getCurrentPosition(p => {
+      gps = { lat: p.coords.latitude.toFixed(6), lng: p.coords.longitude.toFixed(6) };
+      $('#gpsMsg').textContent = `Lokasi dikongsi (±${Math.round(p.coords.accuracy)} m)`;
+      $('#btnGps').textContent = '📍 Kemas kini lokasi'; $('#btnGps').disabled = false;
+    }, err => {
+      gps = null; $('#gpsMsg').textContent = '';
+      $('#btnGps').textContent = '📍 Kongsi lokasi saya'; $('#btnGps').disabled = false;
+      showErr(err.code === 1 ? 'Akses lokasi ditolak. Anda boleh teruskan tanpa lokasi GPS.' : 'Lokasi tidak dapat dikesan. Anda boleh teruskan tanpa lokasi GPS.');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  });
+
+  // ---------- anti-bot (Cloudflare Turnstile) ----------
+  let tsWidget = null;
+  if (cfg.TURNSTILE_SITEKEY && !YB.demo) {
+    window.onTurnstileLoad = () => {
+      tsWidget = turnstile.render('#turnstile', { sitekey: cfg.TURNSTILE_SITEKEY, language: 'ms', theme: 'auto', size: 'flexible' });
+    };
+    const sc = document.createElement('script');
+    sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
+    sc.async = true; sc.defer = true;
+    document.head.appendChild(sc);
+  }
+  const tsToken = () => (tsWidget !== null && window.turnstile) ? turnstile.getResponse(tsWidget) || '' : '';
+  const tsReset = () => { if (tsWidget !== null && window.turnstile) turnstile.reset(tsWidget); };
+
   // ---------- hantar ----------
   const btnText = t => { $('#btnSubmit').textContent = t; };
   $('#form').addEventListener('submit', async e => {
     e.preventDefault();
     const data = {};
-    for (const k of ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'website']) data[k] = $('#' + k).value.trim();
+    for (const k of ['nama', 'telefon', 'kawasan', 'poskod', 'kategori', 'tajuk', 'butiran', 'website']) data[k] = $('#' + k).value.trim();
+    if (gps) { data.lat = gps.lat; data.lng = gps.lng; }
     const yb = $('#yb').value;
     if (!yb) { showErr('Sila pilih DUN / kawasan aduan daripada senarai.'); $('#ybSearch').focus(); return; }
     if (!data.nama || !data.kawasan || !data.tajuk) { showErr('Sila lengkapkan semua ruangan bertanda *.'); return; }
     if (data.telefon.replace(/\D/g, '').length < 9) { showErr('Sila masukkan no. telefon yang sah.'); return; }
+    if (data.poskod && !/^\d{5}$/.test(data.poskod)) { showErr('Poskod mesti 5 digit.'); $('#poskod').focus(); return; }
+    if (tsWidget !== null) {
+      data.turnstile = tsToken();
+      if (!data.turnstile) { showErr('Sila tunggu sebentar sehingga pengesahan keselamatan selesai, kemudian tekan Hantar semula.'); return; }
+    }
     $('#btnSubmit').disabled = true; btnText('Menghantar…'); $('#formErr').hidden = true;
     try {
       const r = await call('submit', { yb, data });
@@ -242,12 +285,14 @@
       files.forEach(f => f.url && URL.revokeObjectURL(f.url)); files = []; renderThumbs();
       window.scrollTo(0, 0);
     } catch (err) { showErr(err.message); }
+    tsReset(); // token Turnstile hanya boleh digunakan sekali
     $('#btnSubmit').disabled = false; btnText('Hantar Aduan');
   });
   function showErr(m) { $('#formErr').textContent = m; $('#formErr').hidden = false; }
   $('#btnAgain').onclick = () => {
     const y = $('#yb').value, s = $('#ybSearch').value;
     $('#form').reset(); $('#yb').value = y; $('#ybSearch').value = s;
+    gps = null; $('#gpsMsg').textContent = ''; $('#btnGps').textContent = '📍 Kongsi lokasi saya';
     $('#form').hidden = false; $('#okBox').hidden = true;
   };
   $('#btnCopy').onclick = async () => {
@@ -262,6 +307,7 @@
       const { item: a, log, yb } = await call('status', { no: $('#sNo').value.trim(), phone4: $('#sTel').value.trim() });
       const s = st(a.status);
       const idx = STATUS.findIndex(x => x.id === a.status);
+      const ditutup = a.status === 'spam';
       $('#semakHasil').innerHTML = `
         <div class="card" style="--c:${s.color}; cursor:default; box-shadow:none">
           <div class="row1"><span class="id">${esc(a.no)}</span><span class="title">${esc(a.tajuk)}</span></div>
@@ -269,7 +315,8 @@
         </div>
         ${yb ? `<p style="margin:12px 0 0">Dikendalikan oleh <b>${esc(yb.nama)}</b> (${esc(yb.kawasan)})</p>` : ''}
         <h3>Status semasa</h3>
-        <div class="steps">${STATUS.map((x, i) => `<span class="${i <= idx ? 'on' : ''}" style="--c:${x.color}">${x.label}</span>`).join('')}</div>
+        ${ditutup ? '<p class="notice err" style="margin:0 0 12px">Aduan ini telah ditutup oleh pejabat YB. Sila hubungi pejabat YB untuk maklumat lanjut.</p>'
+          : `<div class="steps">${STATUS.map((x, i) => `<span class="${i <= idx ? 'on' : ''}" style="--c:${x.color}">${x.label}</span>`).join('')}</div>`}
         ${a.agensi ? `<p>Dirujuk kepada: <b>${esc(a.agensi)}</b></p>` : ''}
         ${a.status === 'selesai' ? `<p>Selesai pada <b>${fmtDate(a.tarikhSelesai)}</b>. Terima kasih atas kesabaran anda.</p>` : ''}
         <h3>Perkembangan</h3>

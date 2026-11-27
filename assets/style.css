@@ -214,3 +214,8 @@ a.thumb { text-decoration: none; }
 .login-wrap .sub { color: var(--muted); margin: 0 0 18px; font-size: 14px; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* anti-spam: butang GPS & Turnstile */
+.btn.gps { width: 100%; padding: 11px 12px; text-align: left; background: var(--bg); border: 1.5px solid var(--border); }
+.turnstile:not(:empty) { margin: 4px 0 14px; min-height: 65px; }
+.flag { color: var(--tindakan); font-weight: 700; }

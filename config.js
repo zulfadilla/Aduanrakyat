@@ -7,4 +7,8 @@ window.YB_CONFIG = {
   // Jenama yang dipaparkan kepada orang ramai.
   TAJUK: 'YB Kasi Setel',
   SUBTAJUK: 'Saluran Aduan Rakyat',
+
+  // Anti-bot Cloudflare Turnstile: tampal "Site Key" di sini (lihat PANDUAN-SETUP.md).
+  // Biarkan kosong untuk matikan. "Secret Key" pula diletak dalam Apps Script (TURNSTILE_SECRET), BUKAN di sini.
+  TURNSTILE_SITEKEY: '',
 };
