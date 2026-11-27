@@ -1,4 +1,4 @@
-# YB Kasi Setel — Saluran & Penjejak Aduan Rakyat
+# Aduan Rakyat — Saluran & Penjejak Aduan Rakyat
 
 Aplikasi web ringkas untuk pejabat YB. Ia boleh dibuka di telefon atau PC, dan tidak perlu dipasang.
 
