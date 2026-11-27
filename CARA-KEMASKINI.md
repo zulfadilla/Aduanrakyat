@@ -30,7 +30,7 @@ Selepas menambah YB baru, link pendeknya terus boleh digunakan: `https://<alamat
    | Fail | Apa yang boleh diubah |
    |---|---|
    | `config.js` | Nama aplikasi (`TAJUK`, `SUBTAJUK`) |
-   | `index.html` | Teks di bahagian atas halaman awam (cth. *"Kami kasi setel."*, *"Aduan Rakyat · Negeri Melaka"*) |
+   | `index.html` | Teks di bahagian atas halaman awam (cth. *"Kami Cuba Selesaikan."*, *"Aduan Rakyat · Negeri Melaka"*) |
    | `assets/style.css` | Warna tema di baris paling atas: `--merah`, `--biru`, `--kuning` |
    | `assets/api.js` | Senarai kategori aduan (`KATEGORI`) |
 
