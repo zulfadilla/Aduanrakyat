@@ -50,6 +50,7 @@
     <select id="fKategori"><option value="">Semua kategori</option></select>
     <select id="fKeutamaan"><option value="">Semua keutamaan</option><option>Tinggi</option><option>Sederhana</option><option>Rendah</option></select>
     <select id="fSaluran"><option value="">Semua saluran</option></select>
+    <select id="fBendera"><option value="">Semua aduan</option><option value="1">⚠️ Ditanda luar kawasan</option></select>
     <select id="fSort">
       <option value="baru">Terkini dahulu</option>
       <option value="lama">Paling lama dahulu</option>
@@ -101,6 +102,7 @@
   <div class="dlg-body">
     <label>Status (tekan untuk tukar)</label>
     <div class="steps" id="vSteps"></div>
+    <p class="notice err" id="vSpamNote" hidden style="margin-top:-6px">🚫 Aduan ini ditanda <b>spam / tidak sah</b> dan tidak dikira dalam statistik. Tekan mana-mana status di atas untuk buka semula.</p>
     <dl class="info" id="vInfo"></dl>
     <h3>Gambar / video <span id="vLampCount" style="color:var(--muted);font-weight:400"></span></h3>
     <div class="thumbs" id="vLamp" style="margin:0 0 8px"></div>
@@ -120,6 +122,8 @@
     <div id="vErr" class="notice err" hidden style="margin-top:12px"></div>
   </div>
   <div class="dlg-foot">
+    <button class="btn danger" id="vSpam" title="Tandakan aduan ini sebagai spam / tidak sah">🚫 Tanda spam</button>
+    <button class="btn danger" id="vSekat" title="Tanda spam dan sekat nombor telefon ini daripada menghantar aduan lagi">⛔ Spam &amp; sekat nombor</button>
     <button class="btn" id="vEdit">Edit maklumat</button>
   </div>
 </dialog>
@@ -200,8 +204,10 @@
   // ---- render ----
   function render() {
     const fy0 = me?.pentadbir ? $('#fYb').value : '';
-    const scope = fy0 ? data.filter(a => a.yb === fy0) : data;
+    const all = fy0 ? data.filter(a => a.yb === fy0) : data;
+    const scope = all.filter(a => a.status !== 'spam'); // spam tidak dikira dalam statistik
     const counts = Object.fromEntries(STATUS.map(s => [s.id, scope.filter(a => a.status === s.id).length]));
+    const nSpam = all.length - scope.length;
     const total = scope.length;
     const pct = total ? Math.round(counts.selesai / total * 100) : 0;
     const done = scope.filter(a => a.status === 'selesai' && a.tarikhSelesai);
@@ -214,13 +220,16 @@
        </button>` +
       STATUS.map(s => `<button class="stat ${statusFilter === s.id ? 'active' : ''}" data-s="${s.id}">
          <div class="n">${counts[s.id]}</div><div class="l"><span class="dot" style="background:${s.color}"></span>${s.label}</div>
-       </button>`).join('');
+       </button>`).join('') +
+      (nSpam || statusFilter === 'spam' ? `<button class="stat ${statusFilter === 'spam' ? 'active' : ''}" data-s="spam">
+         <div class="n">${nSpam}</div><div class="l">🚫 Spam / Tidak sah</div></button>` : '');
 
     const q = $('#q').value.trim().toLowerCase();
     const fk = $('#fKategori').value, fp = $('#fKeutamaan').value, fs = $('#fSaluran').value, sort = $('#fSort').value;
     const fy = me?.pentadbir ? $('#fYb').value : '';
-    const rows = data.filter(a => (!fy || a.yb === fy) &&
-      (!statusFilter || a.status === statusFilter) && (!fk || a.kategori === fk) && (!fp || a.keutamaan === fp) && (!fs || a.saluran === fs) &&
+    const fb = $('#fBendera').value;
+    const rows = data.filter(a => (!fy || a.yb === fy) && (!fb || a.bendera) &&
+      (statusFilter ? a.status === statusFilter : a.status !== 'spam') && (!fk || a.kategori === fk) && (!fp || a.keutamaan === fp) && (!fs || a.saluran === fs) &&
       (!q || [a.no, a.nama, a.kawasan, a.tajuk, a.butiran, a.agensi, a.pegawai, a.telefon].join(' ').toLowerCase().includes(q)));
     rows.sort((a, b) =>
       sort === 'lama' ? String(a.tarikh).localeCompare(b.tarikh) :
@@ -237,6 +246,7 @@
           <span class="title">${esc(a.tajuk)}</span>
           <span class="badge" style="color:${s.color}">${s.label}</span>
           <span class="badge" style="color:var(--${prio})">${esc(a.keutamaan)}</span>
+          ${a.bendera ? `<span class="badge" style="color:var(--tindakan)" title="${esc(a.bendera)}">⚠️ Semak kawasan</span>` : ''}
         </div>
         <div class="meta">
           <span>👤 ${esc(a.nama)}</span><span>📍 ${esc(a.kawasan)}</span><span>🏷️ ${esc(a.kategori)}</span>
@@ -286,12 +296,18 @@
     $('#vTitle').textContent = `${a.no} · ${a.tajuk}`;
     $('#vSteps').innerHTML = STATUS.map(s =>
       `<button class="${a.status === s.id ? 'on' : ''}" style="--c:${s.color}" data-st="${s.id}">${s.label}</button>`).join('');
+    $('#vSpamNote').hidden = a.status !== 'spam';
+    $('#vSpam').hidden = a.status === 'spam';
     const tel = a.telefon ? `<a href="tel:${esc(a.telefon)}">${esc(a.telefon)}</a> · <a href="${esc(waLink(a.telefon))}" target="_blank" rel="noopener">WhatsApp</a>` : '-';
     const rows = [
       ['Pengadu', esc(a.nama)], ['Telefon', tel], ['Kawasan', esc(a.kawasan)], ['Kategori', esc(a.kategori)],
       ['Keutamaan', esc(a.keutamaan)], ['Saluran', esc(a.saluran)], ['Tarikh terima', fmtDate(a.tarikh)],
       ['Agensi dirujuk', esc(a.agensi || '-')], ['Pegawai', esc(a.pegawai || '-')],
       ...(me?.pentadbir ? [['Wakil rakyat', esc(ybName(a.yb))]] : []),
+      ...(a.poskod ? [['Poskod', esc(a.poskod)]] : []),
+      ...(a.lat && a.lng && isFinite(+a.lat) && isFinite(+a.lng)
+        ? [['Lokasi GPS', `<a href="https://www.google.com/maps?q=${+a.lat},${+a.lng}" target="_blank" rel="noopener">Buka di Google Maps ↗</a>`]] : []),
+      ...(a.bendera ? [['⚠️ Amaran', `<span class="flag">${esc(a.bendera)}</span>`]] : []),
       a.status === 'selesai' ? ['Tarikh selesai', fmtDate(a.tarikhSelesai)] : ['Tempoh terbuka', daysSince(a.tarikh) + ' hari'],
       ['Butiran', a.butiran ? esc(a.butiran).replace(/\n/g, '<br>') : '-'],
     ];
@@ -334,6 +350,16 @@
   $('#vClose').onclick = () => { $('#dlgView').close(); };
   $('#dlgView').addEventListener('close', () => { viewingNo = null; });
   $('#vEdit').onclick = () => openForm(data.find(x => x.no === viewingNo));
+  $('#vSpam').onclick = () => {
+    const a = data.find(x => x.no === viewingNo); if (!a || a.status === 'spam') return;
+    act(() => call('update', { no: a.no, data: { status: 'spam' } }));
+  };
+  $('#vSekat').onclick = () => {
+    const a = data.find(x => x.no === viewingNo); if (!a) return;
+    const sebab = prompt(`Sekat nombor ${a.telefon}? Nombor ini tidak lagi boleh menghantar aduan kepada mana-mana YB.\n\nSebab (pilihan):`, 'Aduan palsu');
+    if (sebab === null) return;
+    act(() => call('sekat', { no: a.no, sebab }));
+  };
   $('#vFiles').addEventListener('change', e => {
     const list = [...e.target.files]; e.target.value = '';
     const bad = list.map(YB.checkFile).filter(Boolean);
@@ -350,7 +376,7 @@
   // ---- senarai & tapisan ----
   $('#list').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openView(c.dataset.no); });
   $('#stats').addEventListener('click', e => { const b = e.target.closest('.stat'); if (b) { statusFilter = b.dataset.s; render(); } });
-  for (const id of ['#q', '#fYb', '#fKategori', '#fKeutamaan', '#fSaluran', '#fSort']) $(id).addEventListener('input', render);
+  for (const id of ['#q', '#fYb', '#fKategori', '#fKeutamaan', '#fSaluran', '#fBendera', '#fSort']) $(id).addEventListener('input', render);
   $('#btnNew').onclick = () => openForm(null);
   $('#btnRefresh').onclick = refresh;
   const kOpts = KATEGORI.map(k => `<option>${esc(k)}</option>`).join('');
@@ -359,7 +385,7 @@
 
   // ---- eksport ----
   $('#btnExport').onclick = () => {
-    const cols = ['no', 'yb', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai', 'lampiran'];
+    const cols = ['no', 'yb', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'keutamaan', 'saluran', 'tajuk', 'butiran', 'agensi', 'pegawai', 'status', 'tarikhSelesai', 'poskod', 'lat', 'lng', 'bendera', 'lampiran'];
     const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const csv = [cols.join(','), ...data.map(a => cols.map(c => cell(c === 'status' ? st(a.status).label : c === 'lampiran' ? (a.lampiran || []).map(l => l.url).filter(u => u.startsWith('https')).join(' ') : a[c])).join(','))].join('\r\n');
     const link = Object.assign(document.createElement('a'), {

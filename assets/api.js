@@ -15,7 +15,8 @@ window.YB = (() => {
     'Kebajikan & Bantuan', 'Perumahan', 'Kesihatan', 'Pendidikan', 'Keselamatan', 'Tanah', 'Lain-lain'];
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const st = id => STATUS.find(s => s.id === id) || STATUS[0];
+  const SPAM = { id: 'spam', label: 'Spam / Tidak sah', color: 'var(--rendah)' };
+  const st = id => STATUS.find(s => s.id === id) || (id === 'spam' ? SPAM : STATUS[0]);
   const today = () => new Date().toISOString().slice(0, 10);
   const valid = d => d && !isNaN(new Date(d));
   const fmtDate = d => valid(d) ? new Date(d).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
@@ -63,7 +64,8 @@ window.YB = (() => {
   function mock(action, r) {
     let db;
     try { db = JSON.parse(localStorage.getItem(MK)) || {}; } catch { db = {}; }
-    db.aduan ||= []; db.log ||= []; db.lamp ||= [];
+    db.aduan ||= []; db.log ||= []; db.lamp ||= []; db.sekat ||= [];
+    const normTel = t => { let d = String(t || '').replace(/\D/g, ''); if (d.startsWith('60')) d = d.slice(2); return d && d[0] !== '0' ? '0' + d : d; };
     const saveDb = () => { try { localStorage.setItem(MK, JSON.stringify(db)); } catch {} };
     const now = () => new Date().toISOString();
     const norm = k => String(k || '').trim().toUpperCase();
@@ -94,6 +96,15 @@ window.YB = (() => {
           if (!isAdmin && d.website) return { ok: true, no: kod + '0000-0000', uploadToken: 'x' };
           for (const k of ['nama', 'telefon', 'kawasan', 'tajuk'])
             if (!String(d[k] || '').trim()) throw new Error('Sila lengkapkan semua ruangan wajib.');
+          const tel = normTel(d.telefon);
+          let bendera = '';
+          if (!isAdmin) {
+            if (db.sekat.includes(tel)) throw new Error('Aduan tidak dapat diterima dari nombor ini. Sila hubungi pejabat YB secara terus.');
+            const recent = db.aduan.filter(a => a.saluran === 'Borang dalam talian' && normTel(a.telefon) === tel && Date.now() - new Date(a.tarikh) < 864e5).length;
+            if (recent >= 3) throw new Error(`Nombor ini telah menghantar ${recent} aduan dalam 24 jam. Sila cuba lagi esok, atau hubungi pejabat YB jika kecemasan.`);
+            const pk = String(d.poskod || '').replace(/\D/g, '');
+            if (pk) bendera = pk.length !== 5 ? 'Poskod tidak sah' : !/^7[5-8]/.test(pk) ? 'Poskod di luar negeri' : '';
+          }
           const prefix = kod + new Date().getFullYear() + '-';
           const n = db.aduan.filter(a => a.no.startsWith(prefix)).map(a => +a.no.slice(prefix.length)).reduce((m, x) => Math.max(m, x), 0) + 1;
           const no = prefix + String(n).padStart(4, '0');
@@ -103,6 +114,7 @@ window.YB = (() => {
             saluran: isAdmin ? (d.saluran || 'Walk-in / Pejabat') : 'Borang dalam talian',
             keutamaan: isAdmin ? (d.keutamaan || 'Sederhana') : 'Sederhana', status: 'baru',
             agensi: isAdmin ? d.agensi || '' : '', pegawai: isAdmin ? d.pegawai || '' : '', tarikhSelesai: '', kemaskini: now(), yb: kod,
+            poskod: String(d.poskod || '').replace(/\D/g, '').slice(0, 5), lat: d.lat ?? '', lng: d.lng ?? '', bendera,
           };
           db.aduan.push(a);
           addLog(no, `Aduan diterima melalui ${a.saluran}`);
@@ -131,10 +143,10 @@ window.YB = (() => {
             if (k in d && String(d[k]) !== String(a[k])) { a[k] = d[k]; changed = true; }
           if (s.pentadbir && d.yb && norm(d.yb) !== a.yb) { a.yb = ybOf(d.yb).kod; changed = true; }
           if (changed) addLog(a.no, 'Maklumat aduan dikemaskini', false);
-          if (d.status && d.status !== a.status && STATUS.some(x => x.id === d.status)) {
+          if (d.status && d.status !== a.status && (STATUS.some(x => x.id === d.status) || d.status === 'spam')) {
             a.status = d.status;
             a.tarikhSelesai = d.status === 'selesai' ? now() : '';
-            addLog(a.no, `Status ditukar kepada "${st(d.status).label}"`);
+            addLog(a.no, `Status ditukar kepada "${st(d.status).label}"`, d.status !== 'spam');
           }
           a.kemaskini = now(); saveDb();
           return { ok: true };
@@ -145,6 +157,16 @@ window.YB = (() => {
           const m = String(r.mesej || '').trim(); if (!m) throw new Error('Mesej kosong.');
           addLog(a.no, m, !!r.awam);
           if (a.status === 'baru') { a.status = 'tindakan'; addLog(a.no, `Status ditukar kepada "${st('tindakan').label}"`); }
+          a.kemaskini = now(); saveDb();
+          return { ok: true };
+        }
+        case 'sekat': {
+          const s = auth();
+          const a = findFor(s, r.no);
+          const tel = normTel(a.telefon);
+          if (tel && !db.sekat.includes(tel)) db.sekat.push(tel);
+          a.status = 'spam'; a.tarikhSelesai = '';
+          addLog(a.no, `Ditanda spam & nombor ${tel} disekat` + (r.sebab ? ': ' + r.sebab : ''), false);
           a.kemaskini = now(); saveDb();
           return { ok: true };
         }
@@ -215,5 +237,5 @@ window.YB = (() => {
   // Kod YB daripada URL (?yb=bm)
   const ybParam = () => String(new URLSearchParams(location.search).get('yb') || '').trim().toUpperCase();
 
-  return { fmtSize, checkFile, uploadFile, thumbUrl, safeHref, demo, ybParam, STATUS, KATEGORI, esc, st, today, fmtDate, fmtTime, daysSince, waLink, call, applyBranding };
+  return { fmtSize, checkFile, uploadFile, thumbUrl, safeHref, demo, ybParam, STATUS, SPAM, KATEGORI, esc, st, today, fmtDate, fmtTime, daysSince, waLink, call, applyBranding };
 })();

@@ -6,17 +6,24 @@
  * Tab "Aduan"  : semua aduan; lajur "yb" menentukan aduan itu milik YB mana.
  * Tab "Log"    : log progres setiap aduan.
  * Tab "Lampiran": senarai gambar/video; fail disimpan dalam folder Google Drive "YB Kasi Setel - Lampiran".
- * Script property ADMIN_PASSWORD = kata laluan Pentadbir (nampak semua YB).
+ * Tab "Sekatan" : no. telefon yang disekat daripada menghantar aduan.
+ *
+ * Script properties:
+ *   ADMIN_PASSWORD   = kata laluan Pentadbir (nampak semua YB)
+ *   TURNSTILE_SECRET = Secret Key Cloudflare Turnstile (pilihan; anti-bot)
+ *   HAD_SEHARI       = had aduan bagi setiap no. telefon dalam 24 jam (lalai 3)
+ *   POSKOD_NEGERI    = awalan poskod negeri, dipisah koma (lalai 75,76,77,78 = Melaka)
  */
 
 var COLS = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'saluran',
-  'keutamaan', 'status', 'agensi', 'pegawai', 'tarikhSelesai', 'kemaskini', 'yb'];
+  'keutamaan', 'status', 'agensi', 'pegawai', 'tarikhSelesai', 'kemaskini', 'yb', 'poskod', 'lat', 'lng', 'bendera'];
 var LOG_COLS = ['no', 'masa', 'mesej', 'awam'];
-var AKAUN_COLS = ['kod', 'nama', 'kawasan', 'kata_laluan', 'aktif'];
+var AKAUN_COLS = ['kod', 'nama', 'kawasan', 'kata_laluan', 'aktif', 'poskod', 'pusat', 'radius_km'];
+var SEKATAN_COLS = ['telefon', 'sebab', 'tarikh', 'oleh'];
 var LAMP_COLS = ['no', 'masa', 'nama', 'jenis', 'fileId', 'url', 'oleh'];
 var MAX_FILES_AWAM = 5, MAX_FILES = 15, MAX_BYTES = 25 * 1024 * 1024;
 var UPLOAD_TTL = 1800; // saat: pengadu boleh muat naik lampiran dalam 30 minit selepas hantar
-var STATUS = { baru: 'Baru Diterima', tindakan: 'Dalam Tindakan', agensi: 'Menunggu Agensi', selesai: 'Job Done ✓' };
+var STATUS = { baru: 'Baru Diterima', tindakan: 'Dalam Tindakan', agensi: 'Menunggu Agensi', selesai: 'Job Done ✓', spam: 'Spam / Tidak sah' };
 var EDITABLE = ['nama', 'telefon', 'kawasan', 'kategori', 'tajuk', 'butiran', 'saluran', 'keutamaan', 'agensi', 'pegawai', 'tarikh'];
 var MAXLEN = { butiran: 3000, tajuk: 200 };
 
@@ -52,6 +59,7 @@ function handle(r) {
     case 'update': s = auth(r); return update(s, r.no, r.data || {});
     case 'log': s = auth(r); return addLogAction(s, r.no, r.mesej, !!r.awam);
     case 'upload': return upload(r);
+    case 'sekat': s = auth(r); return sekat(s, r.no, r.sebab);
   }
   throw new Error('Tindakan tidak dikenali.');
 }
@@ -150,21 +158,99 @@ function addLog(no, mesej, awam) {
   sheet('Log', LOG_COLS).appendRow([cell(no), cell(new Date().toISOString()), cell(mesej, 'butiran'), awam ? 'ya' : 'tidak']);
 }
 
+// ---------- anti-spam ----------
+function prop(k, dflt) { var v = PropertiesService.getScriptProperties().getProperty(k); return v == null || v === '' ? dflt : v; }
+
+// Seragamkan no. telefon: 6012-345 6789 / +60123456789 / 0123456789 -> 0123456789
+function normTel(t) {
+  var d = String(t || '').replace(/\D/g, '');
+  if (d.indexOf('60') === 0) d = d.slice(2);
+  if (d && d.charAt(0) !== '0') d = '0' + d;
+  return d;
+}
+
+// Lapisan 1: Cloudflare Turnstile (hanya jika TURNSTILE_SECRET ditetapkan)
+function verifyTurnstile(token) {
+  var secret = prop('TURNSTILE_SECRET', '');
+  if (!secret) return;
+  if (!token) throw new Error('Sila lengkapkan pengesahan keselamatan sebelum menghantar.');
+  var res = UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'post', payload: { secret: secret, response: String(token) }, muteHttpExceptions: true
+  });
+  var j = {};
+  try { j = JSON.parse(res.getContentText()); } catch (e) {}
+  if (!j.success) throw new Error('Pengesahan keselamatan gagal. Sila muat semula halaman dan cuba lagi.');
+}
+
+// Lapisan 3: senarai sekatan
+function isBlocked(tel) {
+  return rows(sheet('Sekatan', SEKATAN_COLS), SEKATAN_COLS).some(function (r) { return normTel(r.telefon) === tel; });
+}
+
+// Lapisan 5: tanda luar kawasan (poskod & GPS). Tidak menolak aduan, hanya menanda untuk disemak staf.
+function distanceKm(lat1, lng1, lat2, lng2) {
+  var R = 6371, toRad = Math.PI / 180;
+  var dLat = (lat2 - lat1) * toRad, dLng = (lng2 - lng1) * toRad;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function kawasanFlags(d, ak) {
+  var flags = [];
+  var pk = String(d.poskod || '').replace(/\D/g, '');
+  if (pk) {
+    var negeri = String(prop('POSKOD_NEGERI', '75,76,77,78')).split(',').map(function (x) { return x.trim(); }).filter(String);
+    var dun = String(ak.poskod || '').split(/[,\s]+/).map(function (x) { return x.trim(); }).filter(String);
+    if (pk.length !== 5) flags.push('Poskod tidak sah');
+    else if (negeri.length && !negeri.some(function (p) { return pk.indexOf(p) === 0; })) flags.push('Poskod di luar negeri');
+    else if (dun.length && dun.indexOf(pk) < 0) flags.push('Poskod di luar DUN');
+  }
+  var lat = Number(d.lat), lng = Number(d.lng);
+  var pusat = String(ak.pusat || '').split(',').map(Number);
+  if (d.lat !== '' && d.lat != null && isFinite(lat) && isFinite(lng) && pusat.length === 2 && isFinite(pusat[0]) && isFinite(pusat[1])) {
+    var km = distanceKm(lat, lng, pusat[0], pusat[1]);
+    var radius = Number(ak.radius_km) || 15;
+    if (km > radius) flags.push('Lokasi GPS ±' + Math.round(km) + ' km dari pusat DUN');
+  }
+  return flags.join('; ');
+}
+
+function cleanCoord(v, max) {
+  var n = Number(v);
+  return v === '' || v == null || !isFinite(n) || Math.abs(n) > max ? '' : String(Math.round(n * 1e6) / 1e6);
+}
+
 // ---------- tindakan ----------
 function submit(d, isAdmin, kod) {
   if (!isAdmin && d.website) return { ok: true, no: kod + '0000-0000', uploadToken: Utilities.getUuid() }; // perangkap bot
   ['nama', 'telefon', 'kawasan', 'tajuk'].forEach(function (k) {
     if (!String(d[k] || '').trim()) throw new Error('Sila lengkapkan semua ruangan wajib.');
   });
+  var tel = normTel(d.telefon);
+  var ak = null;
+  if (!isAdmin) {
+    if (tel.length < 9) throw new Error('Sila masukkan no. telefon yang sah.');
+    verifyTurnstile(d.turnstile);
+    if (isBlocked(tel)) {
+      Utilities.sleep(1000);
+      throw new Error('Aduan tidak dapat diterima dari nombor ini. Sila hubungi pejabat YB secara terus.');
+    }
+    ak = requireYb(kod);
+  }
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
     var sh = sheet('Aduan', COLS);
     var prefix = kod + new Date().getFullYear() + '-';
-    var max = 0;
+    var max = 0, recent = 0, since = Date.now() - 24 * 3600 * 1000;
     rows(sh, COLS).forEach(function (a) {
       if (a.no.indexOf(prefix) === 0) max = Math.max(max, Number(a.no.slice(prefix.length)) || 0);
+      if (!isAdmin && a.saluran === 'Borang dalam talian' && normTel(a.telefon) === tel && new Date(a.tarikh).getTime() > since) recent++;
     });
+    var had = Number(prop('HAD_SEHARI', 3)) || 3;
+    if (!isAdmin && recent >= had)
+      throw new Error('Nombor ini telah menghantar ' + recent + ' aduan dalam 24 jam. Sila cuba lagi esok, atau hubungi pejabat YB jika kecemasan.');
     var no = prefix + ('000' + (max + 1)).slice(-4);
     var now = new Date().toISOString();
     var a = {
@@ -172,7 +258,9 @@ function submit(d, isAdmin, kod) {
       kategori: d.kategori || 'Lain-lain', tajuk: d.tajuk, butiran: d.butiran || '',
       saluran: isAdmin ? (d.saluran || 'Walk-in / Pejabat') : 'Borang dalam talian',
       keutamaan: isAdmin ? (d.keutamaan || 'Sederhana') : 'Sederhana', status: 'baru',
-      agensi: isAdmin ? (d.agensi || '') : '', pegawai: isAdmin ? (d.pegawai || '') : '', tarikhSelesai: '', kemaskini: now, yb: kod
+      agensi: isAdmin ? (d.agensi || '') : '', pegawai: isAdmin ? (d.pegawai || '') : '', tarikhSelesai: '', kemaskini: now, yb: kod,
+      poskod: String(d.poskod || '').replace(/\D/g, '').slice(0, 5), lat: cleanCoord(d.lat, 90), lng: cleanCoord(d.lng, 180),
+      bendera: isAdmin ? '' : kawasanFlags(d, ak)
     };
     sh.appendRow(COLS.map(function (k) { return cell(a[k], k); }));
     addLog(no, 'Aduan diterima melalui ' + a.saluran, true);
@@ -239,7 +327,7 @@ function update(s, no, d) {
     if (d.status && d.status !== a.status && STATUS[d.status]) {
       a.status = d.status;
       a.tarikhSelesai = d.status === 'selesai' ? new Date().toISOString() : '';
-      addLog(a.no, 'Status ditukar kepada "' + STATUS[d.status] + '"', true);
+      addLog(a.no, 'Status ditukar kepada "' + STATUS[d.status] + '"', d.status !== 'spam');
     }
     a.kemaskini = new Date().toISOString();
     writeAduan(f.sh, a);
@@ -318,11 +406,36 @@ function upload(r) {
   }
 }
 
+// Tandakan aduan sebagai spam DAN sekat no. telefon pengadu (berkuat kuasa untuk semua YB).
+function sekat(s, no, sebab) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var f = findForUser(s, no);
+    var tel = normTel(f.a.telefon);
+    if (tel && !isBlocked(tel)) {
+      sheet('Sekatan', SEKATAN_COLS).appendRow([cell(tel), cell(sebab || 'Spam: ' + f.a.no), cell(new Date().toISOString()),
+        cell(s.pentadbir ? 'Pentadbir' : s.akaun.kod)]);
+    }
+    if (f.a.status !== 'spam') {
+      f.a.status = 'spam';
+      f.a.tarikhSelesai = '';
+    }
+    addLog(f.a.no, 'Ditanda spam & nombor ' + tel + ' disekat' + (sebab ? ': ' + sebab : ''), false);
+    f.a.kemaskini = new Date().toISOString();
+    writeAduan(f.sh, f.a);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /** Jalankan sekali dari editor (pilih "setup" > Run) untuk cipta/naik taraf tab dan beri kebenaran. */
 function setup() {
   sheet('Aduan', COLS);
   sheet('Log', LOG_COLS);
   sheet('Lampiran', LAMP_COLS);
+  sheet('Sekatan', SEKATAN_COLS);
   rootFolder(); // minta kebenaran Google Drive & cipta folder lampiran
   var ak = sheet('Akaun', AKAUN_COLS);
   if (ak.getLastRow() < 2) ak.appendRow(['CONTOH', 'YB Contoh', 'DUN Contoh', 'tukar-kata-laluan-ini', 'tidak']);

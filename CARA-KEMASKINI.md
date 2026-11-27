@@ -16,6 +16,10 @@ Panduan untuk pentadbir dan staf selepas sistem berjalan. Untuk setup kali perta
 | Padam aduan palsu atau spam | Tab **`Aduan`** dan **`Log`**: padam baris aduan tersebut |
 | Padam gambar/video | Google Drive, folder `YB Kasi Setel - Lampiran/<no. aduan>`, dan baris dalam tab **`Lampiran`** |
 | Tukar kata laluan Pentadbir | Apps Script: **Project Settings → Script properties → `ADMIN_PASSWORD`** |
+| Sekat nombor spammer | Panel staf: buka aduan, tekan **⛔ Spam & sekat nombor**. Atau tambah nombor terus dalam tab **`Sekatan`** |
+| Nyahsekat nombor | Tab **`Sekatan`**: padam baris nombor tersebut |
+| Tukar had aduan sehari (lalai 3) | Apps Script: **Script properties → `HAD_SEHARI`** |
+| Tetapkan poskod / kawasan DUN | Tab **`Akaun`**: lajur `poskod`, `pusat`, `radius_km` (lihat PANDUAN-SETUP.md, Langkah 4b) |
 
 Perubahan ini **berkuat kuasa serta-merta** dan tidak perlu deploy semula.
 
@@ -85,5 +89,6 @@ Ikut susunan ini. **Backend mesti dikemas kini dahulu**, jika tidak laman baharu
 - **Jangan ubah tajuk lajur** (baris pertama) dalam tab `Aduan`, `Log`, `Lampiran` dan `Akaun`. Sistem bergantung pada susunan lajur itu.
 - **Jangan tukar `kod` YB** yang sudah digunakan. Kod itu ada dalam no. rujukan dan link pendek yang mungkin sudah tercetak di poster.
 - **Jangan kongsi Google Sheet** kepada YB atau staf, kerana kata laluan semua YB ada di dalamnya. Staf cukup menggunakan panel staf (`/admin.html`).
+- **Semak aduan bertanda ⚠️** (luar kawasan) dan telefon pengadu jika ragu-ragu sebelum mengambil tindakan. Jika aduan palsu, tekan **⛔ Spam & sekat nombor**.
 - **Ruang Google Drive** percuma hanya 15 GB. Semak sekali-sekala dan padam folder lampiran aduan lama yang sudah selesai.
 - Tukar kata laluan YB apabila staf berhenti kerja.

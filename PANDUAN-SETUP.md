@@ -57,6 +57,34 @@ Satu baris = satu YB. Baris `CONTOH` boleh dipadam.
 
 Untuk tambah YB baru pada bila-bila masa, cuma tambah satu baris. Tak perlu deploy semula.
 
+**Lajur pilihan untuk semakan kawasan** (aduan dari luar kawasan akan **ditanda ⚠️** untuk disemak staf, bukan ditolak):
+
+| Lajur | Contoh | Fungsi |
+|---|---|---|
+| `poskod` | `76100, 76200, 76300` | Senarai poskod dalam DUN. Jika poskod aduan tiada dalam senarai, aduan ditanda *Poskod di luar DUN* |
+| `pusat` | `2.2600,102.1500` | Koordinat tengah DUN. Dapatkan dari Google Maps: tekan lama pada peta, kemudian salin nombor yang keluar |
+| `radius_km` | `10` | Jarak maksimum dari `pusat` dalam km (lalai 15). Lokasi GPS di luar jarak ini akan ditanda |
+
+Jika lajur ini dibiarkan kosong, semakan untuk DUN itu dilangkau. Poskod di luar Melaka (bukan 75xxx–78xxx) sentiasa ditanda.
+
+## Langkah 4c — Anti-spam: Cloudflare Turnstile (disyorkan, percuma)
+Turnstile ialah pengesah "bukan robot" yang biasanya tidak kelihatan langsung kepada rakyat. Ia menghalang bot daripada menghantar aduan secara automatik.
+1. Buka <https://dash.cloudflare.com>, kemudian **Turnstile** di menu kiri, dan tekan **Add widget**.
+2. Isi:
+   - **Widget name:** `Aduan Rakyat`
+   - **Hostname:** domain laman anda, cth. `aduanrakyat.pages.dev`. Tambah domain sendiri juga jika ada.
+   - **Widget Mode:** **Managed**
+3. Tekan **Create**. Anda akan dapat dua kunci:
+   - **Site Key:** tampal dalam `config.js` → `TURNSTILE_SITEKEY: '...'`
+   - **Secret Key:** dalam Apps Script, pergi ke **Project Settings → Script properties** dan tambah `TURNSTILE_SECRET`. ⚠️ **Jangan** letak Secret Key dalam `config.js` atau GitHub.
+4. Jalankan **`setup`** sekali lagi dan **Allow** kebenaran *"connect to an external service"*. Kebenaran ini diperlukan untuk semak Turnstile.
+
+Lapisan anti-spam lain berjalan secara automatik tanpa setup:
+- **Had aduan:** maksimum **3 aduan** bagi setiap no. telefon dalam 24 jam. Boleh diubah melalui Script property `HAD_SEHARI`, cth. `5`.
+- **Senarai sekatan:** tab **`Sekatan`** dalam Sheet. Staf boleh sekat nombor dengan butang **⛔ Spam & sekat nombor** dalam panel staf.
+- **Tanda luar kawasan:** berdasarkan poskod dan GPS (lihat Langkah 4b).
+- **Status Spam:** aduan spam disembunyikan daripada senarai dan statistik.
+
 ## Langkah 5 — Deploy sebagai Web App
 1. Tekan **Deploy → New deployment**.
 2. Tekan ⚙️ sebelah *Select type* dan pilih **Web app**.
