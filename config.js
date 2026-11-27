@@ -5,7 +5,7 @@ window.YB_CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbx_KEak_q0G0Kzk5ng5G5wO315BxGIs7UnXzphFKw94RBGkimGqmz11zQQfmD9ywwpn7A/exec',
 
   // Jenama yang dipaparkan kepada orang ramai.
-  TAJUK: 'YB Kasi Setel',
+  TAJUK: 'Aduan Rakyat',
   SUBTAJUK: 'Saluran Aduan Rakyat',
 
   // Anti-bot Cloudflare Turnstile: tampal "Site Key" di sini (lihat PANDUAN-SETUP.md).

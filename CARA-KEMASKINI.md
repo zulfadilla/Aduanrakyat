@@ -1,4 +1,4 @@
-# Cara Kemas Kini — YB Kasi Setel
+# Cara Kemas Kini — Aduan Rakyat
 
 Panduan untuk pentadbir dan staf selepas sistem berjalan. Untuk setup kali pertama, lihat [PANDUAN-SETUP.md](PANDUAN-SETUP.md).
 
@@ -14,7 +14,7 @@ Panduan untuk pentadbir dan staf selepas sistem berjalan. Untuk setup kali perta
 | Tukar kata laluan YB | Tab **`Akaun`**: lajur `kata_laluan` |
 | Nyahaktif YB (cth. tamat penggal) | Tab **`Akaun`**: isi `tidak` dalam lajur `aktif`. Data YB itu kekal |
 | Padam aduan palsu atau spam | Tab **`Aduan`** dan **`Log`**: padam baris aduan tersebut |
-| Padam gambar/video | Google Drive, folder `YB Kasi Setel - Lampiran/<no. aduan>`, dan baris dalam tab **`Lampiran`** |
+| Padam gambar/video | Google Drive, folder `Aduan Rakyat - Lampiran/<no. aduan>`, dan baris dalam tab **`Lampiran`** |
 | Tukar kata laluan Pentadbir | Apps Script: **Project Settings → Script properties → `ADMIN_PASSWORD`** |
 | Sekat nombor spammer | Panel staf: buka aduan, tekan **⛔ Spam & sekat nombor**. Atau tambah nombor terus dalam tab **`Sekatan`** |
 | Nyahsekat nombor | Tab **`Sekatan`**: padam baris nombor tersebut |

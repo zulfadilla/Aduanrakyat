@@ -1,4 +1,4 @@
-# Panduan Setup — YB Kasi Setel (±15 minit, sekali sahaja)
+# Panduan Setup — Aduan Rakyat (±15 minit, sekali sahaja)
 
 Anda perlukan: satu akaun Google (sebaik-baiknya akaun pejabat/penyelaras) dan akses ke repo GitHub ini.
 
@@ -89,7 +89,7 @@ Lapisan anti-spam lain berjalan secara automatik tanpa setup:
 1. Tekan **Deploy → New deployment**.
 2. Tekan ⚙️ sebelah *Select type* dan pilih **Web app**.
 3. Tetapkan:
-   - Description: `YB Kasi Setel`
+   - Description: `Aduan Rakyat`
    - Execute as: **Me**
    - Who has access: **Anyone**
 4. Tekan **Deploy**, kemudian salin **Web app URL** (berakhir dengan `/exec`).

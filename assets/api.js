@@ -25,7 +25,7 @@ window.YB = (() => {
   const waLink = tel => 'https://wa.me/' + String(tel || '').replace(/\D/g, '').replace(/^0/, '60');
 
   function applyBranding() {
-    document.querySelectorAll('[data-brand=tajuk]').forEach(el => el.textContent = cfg.TAJUK || 'YB Kasi Setel');
+    document.querySelectorAll('[data-brand=tajuk]').forEach(el => el.textContent = cfg.TAJUK || 'Aduan Rakyat');
     document.querySelectorAll('[data-brand=subtajuk]').forEach(el => el.textContent = cfg.SUBTAJUK || 'Saluran Aduan Rakyat');
     if (cfg.TAJUK) document.title = cfg.TAJUK;
     const b = document.getElementById('demoBanner');
