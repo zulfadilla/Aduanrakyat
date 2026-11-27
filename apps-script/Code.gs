@@ -7,6 +7,7 @@
  * Tab "Log"    : log progres setiap aduan.
  * Tab "Lampiran": senarai gambar/video; fail disimpan dalam folder Google Drive "YB Kasi Setel - Lampiran".
  * Tab "Sekatan" : no. telefon yang disekat daripada menghantar aduan.
+ * Tab "Dipadam" : rekod aduan yang dipadam oleh staf (siapa & bila) untuk tujuan audit.
  *
  * Script properties:
  *   ADMIN_PASSWORD   = kata laluan Pentadbir (nampak semua YB)
@@ -20,6 +21,7 @@ var COLS = ['no', 'tarikh', 'nama', 'telefon', 'kawasan', 'kategori', 'tajuk', '
 var LOG_COLS = ['no', 'masa', 'mesej', 'awam'];
 var AKAUN_COLS = ['kod', 'nama', 'kawasan', 'kata_laluan', 'aktif', 'poskod', 'pusat', 'radius_km'];
 var SEKATAN_COLS = ['telefon', 'sebab', 'tarikh', 'oleh'];
+var DIPADAM_COLS = ['no', 'tajuk', 'nama', 'telefon', 'yb', 'tarikhAduan', 'dipadam', 'oleh', 'sebab'];
 var LAMP_COLS = ['no', 'masa', 'nama', 'jenis', 'fileId', 'url', 'oleh'];
 var MAX_FILES_AWAM = 5, MAX_FILES = 15, MAX_BYTES = 25 * 1024 * 1024;
 var UPLOAD_TTL = 1800; // saat: pengadu boleh muat naik lampiran dalam 30 minit selepas hantar
@@ -60,6 +62,7 @@ function handle(r) {
     case 'log': s = auth(r); return addLogAction(s, r.no, r.mesej, !!r.awam);
     case 'upload': return upload(r);
     case 'sekat': s = auth(r); return sekat(s, r.no, r.sebab);
+    case 'padam': s = auth(r); return padam(s, r.no, r.sebab);
   }
   throw new Error('Tindakan tidak dikenali.');
 }
@@ -251,6 +254,10 @@ function submit(d, isAdmin, kod) {
     var had = Number(prop('HAD_SEHARI', 3)) || 3;
     if (!isAdmin && recent >= had)
       throw new Error('Nombor ini telah menghantar ' + recent + ' aduan dalam 24 jam. Sila cuba lagi esok, atau hubungi pejabat YB jika kecemasan.');
+    // jangan guna semula no. rujukan aduan yang telah dipadam
+    rows(sheet('Dipadam', DIPADAM_COLS), DIPADAM_COLS).forEach(function (x) {
+      if (x.no.indexOf(prefix) === 0) max = Math.max(max, Number(x.no.slice(prefix.length)) || 0);
+    });
     var no = prefix + ('000' + (max + 1)).slice(-4);
     var now = new Date().toISOString();
     var a = {
@@ -430,12 +437,43 @@ function sekat(s, no, sebab) {
   }
 }
 
+// Padam aduan sepenuhnya: baris Aduan, Log & Lampiran, dan fail Drive dihantar ke Bin (boleh dipulihkan 30 hari).
+// Satu rekod ringkas disimpan dalam tab "Dipadam" untuk audit.
+function padam(s, no, sebab) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var f = findForUser(s, no);
+    var a = f.a;
+    var deleteRows = function (name, cols) {
+      var sh = sheet(name, cols);
+      var list = rows(sh, cols).filter(function (r) { return r.no === a.no; });
+      for (var i = list.length - 1; i >= 0; i--) sh.deleteRow(list[i]._row); // dari bawah ke atas
+      return list;
+    };
+    var lamp = deleteRows('Lampiran', LAMP_COLS);
+    lamp.forEach(function (l) { try { if (l.fileId) DriveApp.getFileById(l.fileId).setTrashed(true); } catch (e) {} });
+    try {
+      var it = rootFolder().getFoldersByName(a.no);
+      while (it.hasNext()) it.next().setTrashed(true);
+    } catch (e) {}
+    deleteRows('Log', LOG_COLS);
+    f.sh.deleteRow(a._row);
+    sheet('Dipadam', DIPADAM_COLS).appendRow([cell(a.no), cell(a.tajuk, 'tajuk'), cell(a.nama), cell(a.telefon), cell(a.yb),
+      cell(a.tarikh), cell(new Date().toISOString()), cell(s.pentadbir ? 'Pentadbir' : s.akaun.kod), cell(sebab)]);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /** Jalankan sekali dari editor (pilih "setup" > Run) untuk cipta/naik taraf tab dan beri kebenaran. */
 function setup() {
   sheet('Aduan', COLS);
   sheet('Log', LOG_COLS);
   sheet('Lampiran', LAMP_COLS);
   sheet('Sekatan', SEKATAN_COLS);
+  sheet('Dipadam', DIPADAM_COLS);
   rootFolder(); // minta kebenaran Google Drive & cipta folder lampiran
   var ak = sheet('Akaun', AKAUN_COLS);
   if (ak.getLastRow() < 2) ak.appendRow(['CONTOH', 'YB Contoh', 'DUN Contoh', 'tukar-kata-laluan-ini', 'tidak']);

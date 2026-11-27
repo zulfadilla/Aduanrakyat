@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YB Kasi Setel</title>
+<title>Aduan Rakyat</title>
 <meta name="description" content="Hantar aduan kepada pejabat YB dan semak status penyelesaiannya.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
 <header>
   <div class="wrap narrow topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>
-      <div class="brand-text"><span id="brandTajuk" data-brand="tajuk">YB Kasi Setel</span><small id="brandSub" data-brand="subtajuk">Saluran Aduan Rakyat</small></div></div>
+      <div class="brand-text"><span id="brandTajuk" data-brand="tajuk">Aduan Rakyat</span><small id="brandSub" data-brand="subtajuk">Negeri Melaka</small></div></div>
   </div>
 </header>
 
@@ -151,8 +151,8 @@
     $('#yb').value = y ? y.kod : '';
     $('#ybSearch').value = y ? y.kawasan : '';
     $('#ybPicked').textContent = y ? `Aduan akan dihantar kepada ${y.nama}` : '';
-    $('#brandTajuk').textContent = y ? y.nama : (cfg.TAJUK || 'YB Kasi Setel');
-    $('#brandSub').textContent = y ? `${y.kawasan} · Saluran Aduan Rakyat` : (cfg.SUBTAJUK || 'Saluran Aduan Rakyat');
+    $('#brandTajuk').textContent = y ? y.nama : (cfg.TAJUK || 'Aduan Rakyat');
+    $('#brandSub').textContent = y ? y.kawasan : (cfg.SUBTAJUK || 'Negeri Melaka');
     $('#adminLink').href = y ? 'admin.html?yb=' + encodeURIComponent(y.kod.toLowerCase()) : 'admin.html';
     closeList();
   }

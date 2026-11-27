@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panel Staf · YB Kasi Setel</title>
+<title>Panel Staf · Aduan Rakyat</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
 <header>
   <div class="wrap topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>
-      <div class="brand-text"><span data-brand="tajuk">YB Kasi Setel</span><small id="whoami">Panel Staf</small></div></div>
+      <div class="brand-text"><span data-brand="tajuk">Aduan Rakyat</span><small id="whoami">Panel Staf</small></div></div>
     <span id="adminBtns" hidden style="display:contents">
       <button class="btn" id="btnRefresh" title="Muat semula data">↻</button>
       <button class="btn" id="btnLink" title="Salin link aduan awam untuk kawasan anda">Link awam</button>
@@ -124,6 +124,7 @@
   <div class="dlg-foot">
     <button class="btn danger" id="vSpam" title="Tandakan aduan ini sebagai spam / tidak sah">🚫 Tanda spam</button>
     <button class="btn danger" id="vSekat" title="Tanda spam dan sekat nombor telefon ini daripada menghantar aduan lagi">⛔ Spam &amp; sekat nombor</button>
+    <button class="btn danger" id="vPadam" title="Padam aduan ini sepenuhnya daripada senarai">🗑️ Padam</button>
     <button class="btn" id="vEdit">Edit maklumat</button>
   </div>
 </dialog>
@@ -350,6 +351,16 @@
   $('#vClose').onclick = () => { $('#dlgView').close(); };
   $('#dlgView').addEventListener('close', () => { viewingNo = null; });
   $('#vEdit').onclick = () => openForm(data.find(x => x.no === viewingNo));
+  $('#vPadam').onclick = () => {
+    const a = data.find(x => x.no === viewingNo); if (!a) return;
+    const sebab = prompt(`Padam aduan ${a.no} "${a.tajuk}"?\n\nAduan, log dan gambar akan dibuang daripada senarai. Tindakan ini tidak boleh dibatalkan dari panel staf.\n\nSebab (pilihan):`, 'Aduan tidak masuk akal / spam');
+    if (sebab === null) return;
+    act(async () => {
+      await call('padam', { no: a.no, sebab });
+      viewingNo = null;
+      $('#dlgView').close();
+    });
+  };
   $('#vSpam').onclick = () => {
     const a = data.find(x => x.no === viewingNo); if (!a || a.status === 'spam') return;
     act(() => call('update', { no: a.no, data: { status: 'spam' } }));

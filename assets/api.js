@@ -25,9 +25,9 @@ window.YB = (() => {
   const waLink = tel => 'https://wa.me/' + String(tel || '').replace(/\D/g, '').replace(/^0/, '60');
 
   function applyBranding() {
-    document.querySelectorAll('[data-brand=tajuk]').forEach(el => el.textContent = cfg.TAJUK || 'YB Kasi Setel');
-    document.querySelectorAll('[data-brand=subtajuk]').forEach(el => el.textContent = cfg.SUBTAJUK || 'Saluran Aduan Rakyat');
-    if (cfg.TAJUK) document.title = cfg.TAJUK;
+    document.querySelectorAll('[data-brand=tajuk]').forEach(el => el.textContent = cfg.TAJUK || 'Aduan Rakyat');
+    document.querySelectorAll('[data-brand=subtajuk]').forEach(el => el.textContent = cfg.SUBTAJUK || 'Negeri Melaka');
+    if (cfg.TAJUK) document.title = document.title.replace('Aduan Rakyat', cfg.TAJUK);
     const b = document.getElementById('demoBanner');
     if (b) b.hidden = !demo;
   }
@@ -168,6 +168,15 @@ window.YB = (() => {
           a.status = 'spam'; a.tarikhSelesai = '';
           addLog(a.no, `Ditanda spam & nombor ${tel} disekat` + (r.sebab ? ': ' + r.sebab : ''), false);
           a.kemaskini = now(); saveDb();
+          return { ok: true };
+        }
+        case 'padam': {
+          const s = auth();
+          const a = findFor(s, r.no);
+          db.aduan = db.aduan.filter(x => x !== a);
+          db.log = db.log.filter(l => l.no !== a.no);
+          db.lamp = db.lamp.filter(l => l.no !== a.no);
+          saveDb();
           return { ok: true };
         }
         case 'upload': {
