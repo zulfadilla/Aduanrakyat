@@ -12,7 +12,7 @@ window.YB = (() => {
     { id: 'selesai', label: 'Job Done ✓', color: 'var(--selesai)' },
   ];
   const KATEGORI = ['Jalan & Infrastruktur', 'Lampu Jalan', 'Longkang & Banjir', 'Sampah & Kebersihan', 'Air', 'Elektrik',
-    'Kebajikan & Bantuan', 'Perumahan', 'Kesihatan', 'Pendidikan', 'Keselamatan', 'Tanah', 'Lain-lain'];
+    'Kebajikan & Bantuan', 'Perumahan', 'Kesihatan', 'Pendidikan', 'Keselamatan', 'Tanah', 'Kemudahan Awam', 'Lain-lain'];
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SPAM = { id: 'spam', label: 'Spam / Tidak sah', color: 'var(--rendah)' };
