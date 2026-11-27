@@ -16,7 +16,7 @@
 <header>
   <div class="wrap narrow topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>
-      <div class="brand-text"><span id="brandTajuk" data-brand="tajuk">Aduan Rakyat</span><small id="brandSub" data-brand="subtajuk">Saluran Aduan Rakyat</small></div></div>
+      <div class="brand-text"><span id="brandTajuk" data-brand="tajuk">Aduan Rakyat</span><small id="brandSub" data-brand="subtajuk">Negeri Melaka</small></div></div>
   </div>
 </header>
 
@@ -152,7 +152,7 @@
     $('#ybSearch').value = y ? y.kawasan : '';
     $('#ybPicked').textContent = y ? `Aduan akan dihantar kepada ${y.nama}` : '';
     $('#brandTajuk').textContent = y ? y.nama : (cfg.TAJUK || 'Aduan Rakyat');
-    $('#brandSub').textContent = y ? `${y.kawasan} · Saluran Aduan Rakyat` : (cfg.SUBTAJUK || 'Saluran Aduan Rakyat');
+    $('#brandSub').textContent = y ? y.kawasan : (cfg.SUBTAJUK || 'Negeri Melaka');
     $('#adminLink').href = y ? 'admin.html?yb=' + encodeURIComponent(y.kod.toLowerCase()) : 'admin.html';
     closeList();
   }

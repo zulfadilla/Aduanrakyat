@@ -26,8 +26,8 @@ window.YB = (() => {
 
   function applyBranding() {
     document.querySelectorAll('[data-brand=tajuk]').forEach(el => el.textContent = cfg.TAJUK || 'Aduan Rakyat');
-    document.querySelectorAll('[data-brand=subtajuk]').forEach(el => el.textContent = cfg.SUBTAJUK || 'Saluran Aduan Rakyat');
-    if (cfg.TAJUK) document.title = cfg.TAJUK;
+    document.querySelectorAll('[data-brand=subtajuk]').forEach(el => el.textContent = cfg.SUBTAJUK || 'Negeri Melaka');
+    if (cfg.TAJUK) document.title = document.title.replace('Aduan Rakyat', cfg.TAJUK);
     const b = document.getElementById('demoBanner');
     if (b) b.hidden = !demo;
   }
