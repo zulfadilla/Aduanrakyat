@@ -170,6 +170,15 @@ window.YB = (() => {
           a.kemaskini = now(); saveDb();
           return { ok: true };
         }
+        case 'padam': {
+          const s = auth();
+          const a = findFor(s, r.no);
+          db.aduan = db.aduan.filter(x => x !== a);
+          db.log = db.log.filter(l => l.no !== a.no);
+          db.lamp = db.lamp.filter(l => l.no !== a.no);
+          saveDb();
+          return { ok: true };
+        }
         case 'upload': {
           let no, oleh;
           if (r.token) {

@@ -124,6 +124,7 @@
   <div class="dlg-foot">
     <button class="btn danger" id="vSpam" title="Tandakan aduan ini sebagai spam / tidak sah">🚫 Tanda spam</button>
     <button class="btn danger" id="vSekat" title="Tanda spam dan sekat nombor telefon ini daripada menghantar aduan lagi">⛔ Spam &amp; sekat nombor</button>
+    <button class="btn danger" id="vPadam" title="Padam aduan ini sepenuhnya daripada senarai">🗑️ Padam</button>
     <button class="btn" id="vEdit">Edit maklumat</button>
   </div>
 </dialog>
@@ -350,6 +351,16 @@
   $('#vClose').onclick = () => { $('#dlgView').close(); };
   $('#dlgView').addEventListener('close', () => { viewingNo = null; });
   $('#vEdit').onclick = () => openForm(data.find(x => x.no === viewingNo));
+  $('#vPadam').onclick = () => {
+    const a = data.find(x => x.no === viewingNo); if (!a) return;
+    const sebab = prompt(`Padam aduan ${a.no} "${a.tajuk}"?\n\nAduan, log dan gambar akan dibuang daripada senarai. Tindakan ini tidak boleh dibatalkan dari panel staf.\n\nSebab (pilihan):`, 'Aduan tidak masuk akal / spam');
+    if (sebab === null) return;
+    act(async () => {
+      await call('padam', { no: a.no, sebab });
+      viewingNo = null;
+      $('#dlgView').close();
+    });
+  };
   $('#vSpam').onclick = () => {
     const a = data.find(x => x.no === viewingNo); if (!a || a.status === 'spam') return;
     act(() => call('update', { no: a.no, data: { status: 'spam' } }));
