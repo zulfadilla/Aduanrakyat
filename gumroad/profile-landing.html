@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zulism — Planners, templates &amp; prompt packs</title>
+<meta name="description" content="Printable planners, fill-in templates and AI prompt packs for freelancers, small shops and busy households. Instant downloads from $2.">
+<style>
+  :root {
+    --paper: #f6f1e8;
+    --paper-2: #efe7da;
+    --card: #fffdf9;
+    --ink: #221b26;
+    --ink-2: #5a5060;
+    --line: #ddd2c2;
+    --dot: #d8ccb9;
+    --plum: #6b2d5c;
+    --plum-soft: #f1e2ea;
+    --sage: #5f7556;
+    --sage-soft: #e3eadc;
+    --rose: #b56a58;
+    --rose-soft: #f5e1d9;
+    --gold: #a77b2c;
+    --gold-soft: #f3e8cf;
+    --on-plum: #fff8fb;
+    --shadow: 0 1px 0 rgba(34,27,38,.04), 0 10px 30px -18px rgba(34,27,38,.35);
+    --radius: 18px;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #17131b;
+      --paper-2: #1e1923;
+      --card: #231d29;
+      --ink: #f1eaf2;
+      --ink-2: #b9adbd;
+      --line: #3a3141;
+      --dot: #2f2836;
+      --plum: #e0a3cc;
+      --plum-soft: #3a2236;
+      --sage: #a9c19c;
+      --sage-soft: #26301f;
+      --rose: #e8a08e;
+      --rose-soft: #3b2420;
+      --gold: #e2bd73;
+      --gold-soft: #352a14;
+      --on-plum: #21121d;
+      --shadow: 0 1px 0 rgba(0,0,0,.2), 0 14px 34px -20px rgba(0,0,0,.8);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    background-image: radial-gradient(var(--dot) 1.1px, transparent 1.2px);
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- header ---------- */
+  .top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--serif); font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--plum); color: var(--on-plum);
+    display: grid; place-items: center; font-size: 17px; font-family: var(--serif); font-style: italic;
+  }
+  .nav { display: flex; gap: 4px; }
+  .nav a { text-decoration: none; font-size: 14px; font-weight: 500; color: var(--ink-2); padding: 8px 12px; border-radius: 999px; }
+  .nav a:hover { background: var(--paper-2); color: var(--ink); }
+  .nav .nav-cta { background: var(--ink); color: var(--paper); }
+  .nav .nav-cta:hover { background: var(--plum); color: var(--on-plum); }
+  @media (max-width: 640px) { .nav a:not(.nav-cta) { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 72px 0 56px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; letter-spacing: .02em;
+    color: var(--plum); background: var(--plum-soft); padding: 6px 12px; border-radius: 999px;
+  }
+  .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  h1 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.025em; line-height: 1.04;
+    font-size: clamp(40px, 6.4vw, 74px); margin: 20px 0 18px;
+  }
+  h1 em { font-style: italic; color: var(--plum); font-weight: 600; }
+  .hl { background: linear-gradient(transparent 62%, var(--gold-soft) 62%); padding: 0 .08em; }
+  .lede { font-size: 19px; color: var(--ink-2); max-width: 34em; margin: 0 0 28px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 15px;
+    padding: 14px 22px; border-radius: 999px; border: 1.5px solid var(--ink); transition: transform .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-solid { background: var(--ink); color: var(--paper); }
+  .btn-solid:hover { background: var(--plum); border-color: var(--plum); color: var(--on-plum); }
+  .btn-ghost { background: transparent; }
+  .btn-ghost:hover { background: var(--card); }
+  .facts { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 36px; padding-top: 24px; border-top: 1px dashed var(--line); }
+  .fact b { display: block; font-family: var(--serif); font-size: 28px; line-height: 1; }
+  .fact span { font-size: 13px; color: var(--ink-2); }
+
+  /* hero illustration: stacked planner pages */
+  .stack { position: relative; height: 420px; }
+  .sheet {
+    position: absolute; width: 74%; aspect-ratio: 3 / 4; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: var(--shadow); padding: 22px 20px;
+  }
+  .sheet.s1 { left: 0; top: 34px; transform: rotate(-7deg); background: var(--sage-soft); }
+  .sheet.s2 { right: 0; top: 0; transform: rotate(5deg); background: var(--rose-soft); }
+  .sheet.s3 { left: 13%; top: 52px; transform: rotate(-1deg); }
+  .sheet-title { font-family: var(--serif); font-weight: 700; font-size: 20px; margin-bottom: 4px; }
+  .sheet-sub { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 16px; }
+  .todo { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .box { flex: none; width: 16px; height: 16px; border: 1.5px solid var(--ink-2); border-radius: 4px; }
+  .box.on { background: var(--plum); border-color: var(--plum); position: relative; }
+  .box.on::after { content: ""; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: solid var(--on-plum); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .todo.done span { text-decoration: line-through; color: var(--ink-2); }
+  .tape { position: absolute; top: -12px; left: 50%; width: 86px; height: 24px; transform: translateX(-50%) rotate(-3deg); background: var(--gold-soft); opacity: .9; border-radius: 3px; }
+  .stamp {
+    position: absolute; right: -6px; bottom: 26px; width: 104px; height: 104px; border-radius: 50%;
+    background: var(--plum); color: var(--on-plum); display: grid; place-items: center; text-align: center;
+    font-family: var(--serif); font-weight: 700; line-height: 1.05; transform: rotate(12deg); box-shadow: var(--shadow);
+  }
+  .stamp small { display: block; font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+  .stamp b { font-size: 34px; }
+  @media (max-width: 880px) {
+    .hero { padding: 44px 0 36px; }
+    .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
+    .stack { height: 360px; max-width: 420px; margin: 0 auto; width: 100%; }
+    .sheet { aspect-ratio: auto; height: 300px; }
+    .sheet.s1 { top: 40px; } .sheet.s3 { top: 46px; }
+    .stamp { bottom: 0; right: 0; width: 92px; height: 92px; }
+    .stamp b { font-size: 30px; }
+  }
+  @media (max-width: 420px) { .stack { height: 330px; } .sheet { height: 270px; } .fact b { font-size: 24px; } .sheet { padding: 16px 14px; } .todo { font-size: 13px; padding: 7px 0; } }
+
+  /* ---------- sections ---------- */
+  section { padding: 56px 0; }
+  .sec-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: 28px; }
+  h2 { font-family: var(--serif); font-size: clamp(30px, 4vw, 44px); letter-spacing: -.02em; line-height: 1.08; margin: 0; }
+  .sec-head p { margin: 0; color: var(--ink-2); max-width: 30em; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--plum); margin-bottom: 10px; }
+
+  /* audiences */
+  .who { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .who a {
+    display: block; text-decoration: none; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow); transition: transform .15s ease, border-color .15s ease;
+  }
+  .who a:hover { transform: translateY(-3px); border-color: var(--ink-2); }
+  .who .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; margin-bottom: 16px; }
+  .who h3 { font-family: var(--serif); font-size: 22px; margin: 0 0 6px; }
+  .who p { margin: 0 0 14px; color: var(--ink-2); font-size: 15px; }
+  .who .more { font-weight: 600; font-size: 14px; color: var(--plum); }
+  @media (max-width: 800px) { .who { grid-template-columns: 1fr; } }
+
+  /* featured */
+  .feat { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .fcard {
+    grid-column: span 2; position: relative; display: flex; flex-direction: column; text-decoration: none;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow);
+    min-height: 230px; overflow: hidden; transition: transform .15s ease, border-color .15s ease;
+  }
+  .fcard:hover { transform: translateY(-3px); border-color: var(--ink-2); }
+  .fcard.big { grid-column: span 3; min-height: 270px; }
+  .fcard .tag { align-self: flex-start; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; margin-bottom: 16px; }
+  .fcard h3 { font-family: var(--serif); font-size: 23px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -.01em; }
+  .fcard.big h3 { font-size: 28px; }
+  .fcard p { margin: 0; color: var(--ink-2); font-size: 15px; }
+  .fcard .foot { margin-top: auto; padding-top: 18px; display: flex; align-items: center; justify-content: space-between; }
+  .price { font-family: var(--serif); font-size: 22px; font-weight: 700; }
+  .go { font-size: 14px; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+  .fcard:hover .go { color: var(--plum); }
+  .t-plum { background: var(--plum-soft); color: var(--plum); }
+  .t-sage { background: var(--sage-soft); color: var(--sage); }
+  .t-rose { background: var(--rose-soft); color: var(--rose); }
+  .t-gold { background: var(--gold-soft); color: var(--gold); }
+  .fcard.tint-plum { background: var(--plum); border-color: var(--plum); color: var(--on-plum); }
+  .fcard.tint-plum p, .fcard.tint-plum .go { color: var(--on-plum); opacity: .9; }
+  .fcard.tint-plum .tag { background: color-mix(in srgb, var(--on-plum) 18%, transparent); color: var(--on-plum); }
+  .swatches { display: flex; gap: 6px; margin-top: 14px; }
+  .swatches i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--on-plum) 60%, transparent); }
+  @media (max-width: 900px) { .feat { grid-template-columns: repeat(2, 1fr); } .fcard, .fcard.big { grid-column: span 1; } }
+  @media (max-width: 560px) { .feat { grid-template-columns: 1fr; } .fcard, .fcard.big { min-height: 0; } }
+
+  /* catalogue */
+  .cats { display: grid; gap: 14px; }
+  details.cat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  details.cat > summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; gap: 16px; padding: 20px 22px;
+  }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  .cat-ico { flex: none; width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; }
+  .cat-txt { flex: 1; min-width: 0; }
+  .cat-txt b { display: block; font-family: var(--serif); font-size: 21px; line-height: 1.2; }
+  .cat-txt span { font-size: 14px; color: var(--ink-2); }
+  .count { flex: none; font-size: 13px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line); padding: 4px 10px; border-radius: 999px; }
+  .chev { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; transition: transform .2s ease; }
+  .chev::before { content: ""; width: 7px; height: 7px; border: solid var(--ink); border-width: 0 2px 2px 0; transform: translateY(-2px) rotate(45deg); }
+  details[open] .chev { transform: rotate(180deg); }
+  .list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 24px; padding: 4px 22px 18px; border-top: 1px dashed var(--line); }
+  .list a {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px; text-decoration: none;
+    padding: 13px 0; border-bottom: 1px solid var(--line);
+  }
+  .list a:hover .nm { color: var(--plum); text-decoration: underline; text-underline-offset: 3px; }
+  .nm { font-weight: 600; font-size: 15px; }
+  .nm small { display: block; font-weight: 400; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .pr { flex: none; font-family: var(--serif); font-weight: 700; }
+  @media (max-width: 720px) {
+    .list { grid-template-columns: 1fr; padding: 4px 18px 14px; }
+    details.cat > summary { padding: 16px 18px; gap: 12px; }
+    .count { display: none; }
+  }
+
+  /* why */
+  .why { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .why div { padding: 22px; border-radius: var(--radius); border: 1px dashed var(--line); background: color-mix(in srgb, var(--card) 70%, transparent); }
+  .why b { display: block; font-family: var(--serif); font-size: 19px; margin-bottom: 6px; }
+  .why p { margin: 0; color: var(--ink-2); font-size: 15px; }
+  .why .n { font-family: var(--serif); font-style: italic; color: var(--plum); font-size: 15px; margin-bottom: 10px; display: block; }
+  @media (max-width: 900px) { .why { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .why { grid-template-columns: 1fr; } }
+
+  /* newsletter */
+  .news {
+    position: relative; overflow: hidden; border-radius: 28px; padding: 48px; background: var(--ink); color: var(--paper);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;
+  }
+  .news::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(color-mix(in srgb, var(--paper) 14%, transparent) 1.1px, transparent 1.2px); background-size: 22px 22px;
+  }
+  .news > * { position: relative; z-index: 1; }
+  .news h2 { color: var(--paper); }
+  .news p { color: color-mix(in srgb, var(--paper) 75%, transparent); margin: 12px 0 0; }
+  .news form { display: flex; flex-wrap: wrap; gap: 10px; }
+  .news label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .news input[type=email] {
+    flex: 1 1 220px; min-width: 0; font: inherit; font-size: 16px; padding: 15px 18px; border-radius: 999px;
+    border: 1.5px solid color-mix(in srgb, var(--paper) 30%, transparent); background: color-mix(in srgb, var(--paper) 8%, transparent); color: var(--paper);
+  }
+  .news input[type=email]::placeholder { color: color-mix(in srgb, var(--paper) 55%, transparent); }
+  .news input[type=email]:focus { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .news button {
+    flex: none; font: inherit; font-weight: 700; font-size: 15px; padding: 15px 24px; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--gold-soft); color: #2a1f0b;
+  }
+  .news button:hover { background: var(--paper); }
+  .msg { flex-basis: 100%; font-size: 14px; color: var(--gold-soft); min-height: 1em; margin: 4px 0 0; }
+  .fine { flex-basis: 100%; font-size: 13px; margin: 0; color: color-mix(in srgb, var(--paper) 55%, transparent); }
+  @media (prefers-color-scheme: dark) {
+    .news { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+    .news h2 { color: var(--ink); }
+    .news p, .fine { color: var(--ink-2); }
+    .news input[type=email] { color: var(--ink); border-color: var(--line); background: var(--paper); }
+    .news input[type=email]::placeholder { color: var(--ink-2); }
+    .news button { background: var(--plum); color: var(--on-plum); }
+    .news button:hover { background: var(--ink); color: var(--paper); }
+    .msg { color: var(--gold); }
+  }
+  @media (max-width: 800px) { .news { grid-template-columns: 1fr; padding: 32px 22px; border-radius: 22px; } }
+
+  footer { padding: 40px 0 56px; color: var(--ink-2); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 28px; }
+  footer a { color: var(--ink-2); }
+  footer a:hover { color: var(--plum); }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 18px; }
+
+  a:focus-visible, summary:focus-visible, button:focus-visible { outline: 2px solid var(--plum); outline-offset: 3px; border-radius: 8px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Zulism home"><span class="brand-mark">Z</span>Zulism</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#featured">Best picks</a>
+      <a href="#shop">All products</a>
+      <a href="#letter">Newsletter</a>
+      <a class="nav-cta" href="#shop">Browse the shop</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">80+ instant downloads · from $2</span>
+      <h1>Templates for people who <em>run things.</em></h1>
+      <p class="lede">Printable planners, fill-in templates and AI prompt packs for <span class="hl">freelancers, small shops</span> and busy households. Print it, fill it in, get on with your day.</p>
+      <div class="btns">
+        <a class="btn btn-solid" href="#shop">Find your template →</a>
+        <a class="btn btn-ghost" href="https://genusjynx.gumroad.com/l/planner-2027-bundle">See the 2027 planner</a>
+      </div>
+      <div class="facts">
+        <div class="fact"><b>80+</b><span>planners &amp; templates</span></div>
+        <div class="fact"><b>$2</b><span>most products</span></div>
+        <div class="fact"><b>PDF · Sheets · Notion</b><span>instant download</span></div>
+      </div>
+    </div>
+
+    <div class="stack" aria-hidden="true">
+      <div class="sheet s1">
+        <div class="sheet-title">Cash flow</div>
+        <div class="sheet-sub">13-week view</div>
+      </div>
+      <div class="sheet s2">
+        <div class="sheet-title">Content plan</div>
+        <div class="sheet-sub">90 days</div>
+      </div>
+      <div class="sheet s3">
+        <span class="tape"></span>
+        <div class="sheet-title">This week</div>
+        <div class="sheet-sub">Monday · Planner page</div>
+        <div class="todo done"><i class="box on"></i><span>Send client proposal</span></div>
+        <div class="todo done"><i class="box on"></i><span>Update stock count</span></div>
+        <div class="todo"><i class="box"></i><span>Batch 3 Reels</span></div>
+        <div class="todo"><i class="box"></i><span>Invoice #0042</span></div>
+        <div class="todo"><i class="box"></i><span>Meal plan + groceries</span></div>
+      </div>
+      <div class="stamp"><div><small>from</small><b>$2</b></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO -->
+<section style="padding-top:8px">
+  <div class="wrap">
+    <div class="who">
+      <a href="#c-freelance">
+        <div class="ico t-plum">✎</div>
+        <h3>Freelancers</h3>
+        <p>Proposals, pricing, client scripts and trackers that help you get booked and paid.</p>
+        <span class="more">16 templates →</span>
+      </a>
+      <a href="#c-grow">
+        <div class="ico t-sage">✦</div>
+        <h3>Small shops &amp; creators</h3>
+        <p>Launch plans, listing SEO, content calendars and the numbers behind them.</p>
+        <span class="more">32 templates →</span>
+      </a>
+      <a href="#c-home">
+        <div class="ico t-rose">♥</div>
+        <h3>Home &amp; everyday life</h3>
+        <p>Budgets, meal plans, habits, chores and the 2027 planners you'll actually stick with.</p>
+        <span class="more">20 printables →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED -->
+<section id="featured">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="kicker">Best picks</div>
+        <h2>Start with these</h2>
+      </div>
+      <p>The most complete kits in the shop. Each one opens on Gumroad, where you can see every page before you buy.</p>
+    </div>
+
+    <div class="feat">
+      <a class="fcard big tint-plum" href="https://genusjynx.gumroad.com/l/planner-2027-bundle">
+        <span class="tag">Bundle · 4 themes</span>
+        <h3>2027 ADHD-Friendly Digital Planner</h3>
+        <p>Low-overwhelm daily and weekly pages for GoodNotes &amp; Notability. All four colourways in one download.</p>
+        <div class="swatches"><i style="background:#4a2a3f"></i><i style="background:#c99a8c"></i><i style="background:#1d1d22"></i><i style="background:#b8c4a8"></i></div>
+        <div class="foot"><span class="price">$5</span><span class="go">View planner →</span></div>
+      </a>
+      <a class="fcard big" href="https://genusjynx.gumroad.com/l/shop-os">
+        <span class="tag t-sage">Notion template</span>
+        <h3>Small Online Shop OS</h3>
+        <p>Orders, stock and profit in one Notion workspace, built for Shopee, TikTok Shop and Etsy sellers.</p>
+        <div class="foot"><span class="price">$10</span><span class="go">View template →</span></div>
+      </a>
+      <a class="fcard" href="https://genusjynx.gumroad.com/l/freelancer-kit">
+        <span class="tag t-plum">Excel + Sheets</span>
+        <h3>Get-Paid Freelancer Kit</h3>
+        <p>Invoice generator, quotes, a contract and client emails.</p>
+        <div class="foot"><span class="price">$2</span><span class="go">View →</span></div>
+      </a>
+      <a class="fcard" href="https://genusjynx.gumroad.com/l/printable-planner-bundle">
+        <span class="tag t-rose">Bundle · 7 planners</span>
+        <h3>Complete Printable Planner Bundle</h3>
+        <p>Money, meals, study, habits, business &amp; weddings.</p>
+        <div class="foot"><span class="price">$2</span><span class="go">View →</span></div>
+      </a>
+      <a class="fcard" href="https://genusjynx.gumroad.com/l/ai-prompts-sellers">
+        <span class="tag t-gold">120 prompts</span>
+        <h3>AI Prompts for Online Sellers</h3>
+        <p>Listings, TikTok scripts, customer service &amp; promos.</p>
+        <div class="foot"><span class="price">$2</span><span class="go">View →</span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- CATALOGUE -->
+<section id="shop">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="kicker">The shop</div>
+        <h2>Everything, by what you need</h2>
+      </div>
+      <p>Open a shelf to see every product in it. Each link goes to the product page on Gumroad.</p>
+    </div>
+
+    <div class="cats">
+
+      <details class="cat" id="c-2027" open>
+        <summary>
+          <span class="cat-ico t-plum">◷</span>
+          <span class="cat-txt"><b>2027 planners &amp; calendars</b><span>Digital and printable planners for the new year</span></span>
+          <span class="count">8</span><span class="chev"></span>
+        </summary>
+        <div class="list">
+          <a href="https://genusjynx.gumroad.com/l/planner-2027-bundle"><span class="nm">2027 ADHD-Friendly Digital Planner · All 4 Themes<small>GoodNotes, Notability</small></span><span class="pr">$5</span></a>
+          <a href="https://genusjynx.gumroad.com/l/planner-2027-plum"><span class="nm">2027 ADHD-Friendly Planner · Chocolate Plum<small>GoodNotes, Notability</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/planner-2027-rose"><span class="nm">2027 ADHD-Friendly Planner · Rose Earth<small>GoodNotes, Notability</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/planner-2027-dark"><span class="nm">2027 ADHD-Friendly Planner · Dark Mode<small>GoodNotes, Notability</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/planner-2027-sage"><span class="nm">2027 ADHD-Friendly Planner · Cloud Dancer &amp; Sage<small>GoodNotes, Notability</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/2027-goal-planner"><span class="nm">2027 Goal Planner &amp; Vision Board Workbook<small>Printable · A4 + US Letter</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/2027-calendar"><span class="nm">2027 Printable Calendar<small>Minimalist monthly · Sunday &amp; Monday start</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/printable-planner-bundle"><span class="nm">The Complete Printable Planner Bundle<small>7 planners · A5 PDF</small></span><span class="pr">$2</span></a>
+        </div>
+      </details>
+
+      <details class="cat" id="c-freelance">
+        <summary>
+          <span class="cat-ico t-plum">✎</span>
+          <span class="cat-txt"><b>For freelancers</b><span>Win clients, price your work, get paid on time</span></span>
+          <span class="count">16</span><span class="chev"></span>
+        </summary>
+        <div class="list">
+          <a href="https://genusjynx.gumroad.com/l/freelancer-kit"><span class="nm">Get-Paid Freelancer Kit<small>Invoices, quotes, contract &amp; emails · Excel + Sheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/first-10-freelance-clients"><span class="nm">First 10 Freelance Clients<small>Guide with outreach scripts &amp; trackers</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/client-proposal-templates"><span class="nm">Client Proposal Templates<small>Fill-in proposals &amp; 3-option pricing</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/price-your-services-worksheets"><span class="nm">Price Your Services<small>10 worksheets: rate calculator, packages, quotes</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/raise-your-rates-guide"><span class="nm">Raise Your Rates Without Losing Clients<small>Guide + email scripts</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/productize-your-service-guide"><span class="nm">Productize Your Service<small>Fixed-price packages + worksheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/discovery-call-templates"><span class="nm">Discovery Call Templates<small>Script, 25 questions &amp; objection replies</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/client-onboarding-planner"><span class="nm">Client Onboarding Planner<small>Scope, intake, kickoff &amp; welcome packet</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/client-boundary-scope-creep-scripts"><span class="nm">Client Boundary &amp; Scope Creep Scripts<small>31 fill-in emails</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/freelance-project-tracker"><span class="nm">Freelance Project Tracker<small>Briefs, milestones, revisions &amp; time</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/client-lead-crm-planner"><span class="nm">Client &amp; Lead CRM Planner<small>Lead log, pipeline &amp; follow-ups</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/freelancer-tracker"><span class="nm">Freelancer Income &amp; Invoice Tracker<small>Clients, invoices &amp; tax · A5</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/testimonial-case-study-templates"><span class="nm">Testimonial &amp; Case Study Templates<small>Request scripts, forms &amp; layouts</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/media-kit-rate-card-templates"><span class="nm">Media Kit &amp; Rate Card Templates<small>12 pages + brand pitch scripts</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ugc-creator-side-hustle-guide"><span class="nm">Start a UGC Creator Side Hustle<small>Portfolio, rates &amp; pitches</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/podcast-guesting-kit"><span class="nm">Podcast Guesting Kit<small>Pitch templates, one-sheet &amp; interview prep</small></span><span class="pr">$2</span></a>
+        </div>
+      </details>
+
+      <details class="cat" id="c-grow">
+        <summary>
+          <span class="cat-ico t-sage">✦</span>
+          <span class="cat-txt"><b>Sell, market &amp; grow</b><span>Launches, listings, content and customers</span></span>
+          <span class="count">20</span><span class="chev"></span>
+        </summary>
+        <div class="list">
+          <a href="https://genusjynx.gumroad.com/l/validate-product-idea-7-days"><span class="nm">Validate Your Digital Product Idea in 7 Days<small>Step-by-step guide + worksheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/product-launch-planner"><span class="nm">Product Launch Planner<small>6-week countdown &amp; launch checklist</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/sales-page-guide-digital-products"><span class="nm">Write a Sales Page That Sells<small>Copywriting guide + worksheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/product-description-templates"><span class="nm">Product Description Templates<small>20 fill-in formulas</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/sales-funnel-customer-journey-planner"><span class="nm">Sales Funnel &amp; Customer Journey Planner<small>Map, fix &amp; track every stage</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/brand-identity-workbook"><span class="nm">Brand Identity Workbook<small>Mission, audience, voice, colours &amp; fonts</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/90-day-content-calendar-planner"><span class="nm">90-Day Content Calendar Planner<small>Pillars, idea bank &amp; batching pages</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/content-repurposing-guide"><span class="nm">One Post, Ten Pieces<small>Content repurposing guide + worksheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/social-media-metrics-tracker"><span class="nm">Social Media Metrics Tracker<small>Weekly log &amp; monthly dashboards</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/pinterest-traffic-digital-products"><span class="nm">Pinterest Traffic for Digital Products<small>Guide with a 30-day plan</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/email-list-from-zero-guide"><span class="nm">Build Your Email List from Zero<small>Lead magnet &amp; welcome email guide</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/partnership-marketing-guide"><span class="nm">Grow Through Partnerships<small>Collab marketing guide + pitch examples</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ad-budget-test-planner"><span class="nm">Small Ad Budget Test Planner<small>Budget, A/B tests &amp; weekly reviews</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/etsy-listing-seo-planner"><span class="nm">Etsy Listing &amp; Shop SEO Planner<small>Keywords, tags, photos &amp; 30-day tracker</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/holiday-sales-promo-planner"><span class="nm">Holiday Sales Promo Planner<small>Offers, promo calendar &amp; email plan</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/repeat-customers-retention-guide"><span class="nm">Turn One-Time Buyers into Repeat Customers<small>Retention guide + worksheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/competitor-research-workbook"><span class="nm">Competitor Research Workbook<small>Prices, offers, content &amp; reviews</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/customer-service-email-templates"><span class="nm">Customer Service Email Templates<small>30 fill-in replies for small shops</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/shop-policy-templates"><span class="nm">Shop Policy Templates<small>Refund, shipping, licence &amp; FAQ pages</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/craft-fair-vendor-planner"><span class="nm">Craft Fair &amp; Pop-Up Market Vendor Planner<small>Budget, stock, booth &amp; sales</small></span><span class="pr">$2</span></a>
+        </div>
+      </details>
+
+      <details class="cat" id="c-run">
+        <summary>
+          <span class="cat-ico t-gold">▦</span>
+          <span class="cat-txt"><b>Run the business</b><span>Money, systems, planning and reviews</span></span>
+          <span class="count">12</span><span class="chev"></span>
+        </summary>
+        <div class="list">
+          <a href="https://genusjynx.gumroad.com/l/shop-os"><span class="nm">Small Online Shop OS<small>Notion · orders, stock &amp; profit</small></span><span class="pr">$10</span></a>
+          <a href="https://genusjynx.gumroad.com/l/cash-flow-planner"><span class="nm">Small Business Cash Flow Planner<small>Monthly forecast &amp; 13-week view</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/product-pricing-profit-worksheets"><span class="nm">Product Pricing &amp; Profit Worksheets<small>Cost, fees, margins &amp; break-even</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/business-plan-one-pager-templates"><span class="nm">Business Plan One-Pager Templates<small>11 pages · offers, pricing &amp; 90-day goals</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/monthly-business-review-planner"><span class="nm">Monthly Business Review Planner<small>12 CEO check-ins + year-end review</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/small-business-sop-templates"><span class="nm">Small Business SOP Templates<small>9 fill-in process templates</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/year-end-bookkeeping-organizer"><span class="nm">Year-End Bookkeeping &amp; Tax Prep Organizer<small>Income, expenses &amp; stock count</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/software-subscription-audit-planner"><span class="nm">Software &amp; Subscription Audit Planner<small>Cut tool costs, track renewals</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/hire-first-virtual-assistant-planner"><span class="nm">Hire Your First Virtual Assistant<small>Time audit, hiring &amp; onboarding</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/side-hustle-launch-workbook"><span class="nm">30-Day Side Hustle Launch Workbook<small>Idea to first sale</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/side-hustle-time-blocking-planner"><span class="nm">Side Hustle Time-Blocking Planner<small>Time audit &amp; weekly blocks</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/seller-planner"><span class="nm">Online Seller Planner<small>Sales, stock &amp; profit tracker · A5</small></span><span class="pr">$2</span></a>
+        </div>
+      </details>
+
+      <details class="cat" id="c-ai">
+        <summary>
+          <span class="cat-ico t-rose">✱</span>
+          <span class="cat-txt"><b>AI prompt packs</b><span>Ready-to-paste prompts for ChatGPT, Claude &amp; Gemini</span></span>
+          <span class="count">12</span><span class="chev"></span>
+        </summary>
+        <div class="list">
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-sellers"><span class="nm">120 AI Prompts for Online Sellers<small>Listings, TikTok scripts &amp; promos</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-for-freelancers"><span class="nm">100 AI Prompts for Freelancers<small>Outreach, proposals &amp; pricing</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-instagram-small-business"><span class="nm">100 AI Prompts for Instagram<small>Captions, Reels &amp; carousels</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-youtube-small-business"><span class="nm">100 AI Prompts for YouTube<small>Ideas, titles, scripts &amp; Shorts</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/linkedin-ai-prompts"><span class="nm">100 AI Prompts for LinkedIn Personal Branding<small>Profile, posts, hooks &amp; DMs</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/email-marketing-ai-prompts"><span class="nm">100 AI Prompts for Email Marketing<small>Newsletter, welcome &amp; launch</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-seo-blog-content"><span class="nm">100 AI Prompts for SEO &amp; Blog Content<small>Keywords, briefs &amp; updates</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-business-planning"><span class="nm">100 AI Prompts for Business Planning<small>Research, offers, pricing &amp; goals</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-business-admin-operations"><span class="nm">100 AI Prompts for Admin &amp; Operations<small>SOPs, meetings, hiring &amp; reviews</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-spreadsheets-small-business"><span class="nm">100 AI Prompts for Excel &amp; Google Sheets<small>Trackers, formulas &amp; profit</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-online-course-creators"><span class="nm">100 AI Prompts for Online Course Creators<small>Curriculum, lessons &amp; launch</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/ai-prompts-webinars-workshops"><span class="nm">100 AI Prompts for Webinars &amp; Workshops<small>Plan, promote, deliver &amp; follow up</small></span><span class="pr">$2</span></a>
+        </div>
+      </details>
+
+      <details class="cat" id="c-home">
+        <summary>
+          <span class="cat-ico t-rose">♥</span>
+          <span class="cat-txt"><b>Home, money &amp; everyday life</b><span>Budgets, meals, habits, family and career</span></span>
+          <span class="count">12</span><span class="chev"></span>
+        </summary>
+        <div class="list">
+          <a href="https://genusjynx.gumroad.com/l/monthly-budget-planner"><span class="nm">Monthly Budget Planner<small>For your paycheck · A5, 14 pages</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/budget-debt-planner"><span class="nm">Payday-First Budget &amp; Debt Payoff Planner<small>Excel + Google Sheets</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/savings-challenge"><span class="nm">Savings Challenge Printables<small>52-week, 100 envelope, 1K–10K &amp; no-spend</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/meal-planner"><span class="nm">Weekly Meal Planner &amp; Grocery List<small>A5, 12 pages</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/habit-tracker"><span class="nm">Habit &amp; Goal Tracker<small>30-day streaks &amp; weekly review</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/islamic-habit-tracker"><span class="nm">Islamic Daily Habit Tracker<small>30 days · printable</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/workout-log"><span class="nm">Fitness &amp; Workout Log<small>Strength, cardio &amp; recovery</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/study-planner"><span class="nm">Student Study Planner<small>Semester &amp; assignment tracker</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/kids-chore-chart"><span class="nm">Kids Chore &amp; Reward Chart<small>Routines, sticker chart &amp; pocket money</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/christmas-planner"><span class="nm">Christmas &amp; Holiday Planner<small>Gifts, budget, menu &amp; cards</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/wedding-planner"><span class="nm">Wedding Planner<small>Checklist, budget &amp; guest list</small></span><span class="pr">$2</span></a>
+          <a href="https://genusjynx.gumroad.com/l/resume-templates"><span class="nm">10 Eye-Catching Resume Templates<small>+ cover letters · Word &amp; Google Docs</small></span><span class="pr">$2</span></a>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="kicker">How it works</div>
+        <h2>Simple, on purpose</h2>
+      </div>
+    </div>
+    <div class="why">
+      <div><span class="n">01</span><b>Download right away</b><p>Your files arrive the moment you check out, and stay in your Gumroad library.</p></div>
+      <div><span class="n">02</span><b>Print or go digital</b><p>A4, US Letter and A5 PDFs, plus Sheets, Excel, Notion and GoodNotes versions.</p></div>
+      <div><span class="n">03</span><b>Fill it in</b><p>Clear prompts and fill-in blanks, so you never stare at an empty page.</p></div>
+      <div><span class="n">04</span><b>Cheap to try</b><p>Most products are $2. Pick one, use it this week, see if it helps.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section id="letter">
+  <div class="wrap">
+    <div class="news">
+      <div>
+        <div class="kicker" style="color:var(--gold)">The Zulism letter</div>
+        <h2>New templates, first.</h2>
+        <p>Get an email when a new planner or template comes out, plus the occasional launch discount. No spam, unsubscribe anytime.</p>
+      </div>
+      <form data-gumroad-follow>
+        <label for="follow-email">Email address</label>
+        <input id="follow-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+        <button type="submit">Subscribe</button>
+        <p class="msg" data-gumroad-follow-message role="status" aria-live="polite"></p>
+        <p class="fine">You'll get emails from Zulism on Gumroad.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Zulism · Planners &amp; templates on Gumroad</span>
+    <div class="foot-links">
+      <a href="#featured">Best picks</a>
+      <a href="#shop">All products</a>
+      <a href="#letter">Newsletter</a>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
